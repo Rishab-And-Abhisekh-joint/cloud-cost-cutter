@@ -67,7 +67,7 @@ In a second terminal:
 ```bash
 set ENV_BASE_URL=http://127.0.0.1:8000
 set RUN_SEED=42
-python -m cloud_cost_env.inference
+python -m cloud_cost_env.baseline_runner
 ```
 
 Baseline helper (root wrapper):
@@ -75,6 +75,12 @@ Baseline helper (root wrapper):
 ```bash
 python inference.py
 ```
+
+Naming map:
+
+- `inference.py` (repo root): OpenEnv submission entrypoint
+- `cloud_cost_env/baseline_runner.py`: deterministic baseline policy loop
+- `cloud_cost_env/inference_llm.py`: LLM-driven policy loop
 
 LLM runner (separate from baseline):
 
@@ -284,7 +290,7 @@ These scores are reproducible with deterministic task seeds and the same environ
 - `cloud_cost_env/server/environment.py`: reset/step logic
 - `cloud_cost_env/server/action_engine.py`: action execution
 - `cloud_cost_env/server/grader.py`: deterministic scoring
-- `cloud_cost_env/inference.py`: baseline local inference loop
+- `cloud_cost_env/baseline_runner.py`: baseline local inference loop
 - `cloud_cost_env/inference_llm.py`: LLM-driven inference loop with robust JSON parsing
 - `Dockerfile` + `railway.json`: Railway backend deployment
 - `frontend/`: Vercel dashboard (Vite + React)

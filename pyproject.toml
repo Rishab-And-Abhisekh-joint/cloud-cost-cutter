@@ -22,7 +22,7 @@ dependencies = [
 
 [project.scripts]
 server = "cloud_cost_env.server.app:main"
-inference-baseline = "cloud_cost_env.inference:run"
+inference-baseline = "cloud_cost_env.baseline_runner:run"
 inference-llm = "cloud_cost_env.inference_llm:run"
 
 [tool.setuptools.packages.find]

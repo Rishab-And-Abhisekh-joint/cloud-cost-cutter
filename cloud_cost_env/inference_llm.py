@@ -10,7 +10,7 @@ from openai import OpenAI
 from pydantic import ValidationError
 
 from cloud_cost_env.client import EnvClient
-from cloud_cost_env.inference import pick_action
+from cloud_cost_env.baseline_runner import pick_action
 from cloud_cost_env.models import CloudCostAction, CloudCostObservation
 
 BENCHMARK = "cloud_cost_env"
@@ -215,6 +215,7 @@ def run(client_override: OpenAI | None = None, model_override: str | None = None
             "or enable ALLOW_HEURISTIC_FALLBACK=true."
         )
     env = EnvClient(base_url=ENV_BASE_URL)
+    unexpected_errors: list[str] = []
 
     try:
         for task_name in TASKS:
@@ -222,53 +223,66 @@ def run(client_override: OpenAI | None = None, model_override: str | None = None
             steps_taken = 0
             attempted: set[tuple[str, str]] = set()
             strict_failure = False
+            task_failed = False
 
-            seed = int(RUN_SEED) if RUN_SEED is not None else None
-            obs = env.reset(task_name, seed=seed)
             log_start(task=task_name, env=BENCHMARK, model=model_name if client else "heuristic-fallback")
 
-            done = False
-            for step in range(1, MAX_STEPS + 1):
-                if done:
-                    break
+            try:
+                seed = int(RUN_SEED) if RUN_SEED is not None else None
+                obs = env.reset(task_name, seed=seed)
 
-                if client is None:
-                    action_payload = pick_action(obs.model_dump(), attempted)
-                    action = CloudCostAction.model_validate(action_payload)
-                else:
-                    try:
-                        action = _llm_action(
-                            client,
-                            obs,
-                            step,
-                            model_name=model_name,
-                            strict=STRICT_ACTION_MODE,
-                        )
-                    except Exception as exc:
-                        if STRICT_ACTION_MODE:
-                            strict_failure = True
-                            steps_taken = step
-                            log_step(step=step, action="invalid_action()", reward=0.0, done=True, error=str(exc))
-                            done = True
-                            break
-                        action = CloudCostAction(command="skip", resource_id="", params={})
+                done = False
+                for step in range(1, MAX_STEPS + 1):
+                    if done:
+                        break
 
-                attempted.add((action.command, action.resource_id))
-                result = env.step(action)
-                obs = result.observation
-                done = result.done
+                    if client is None:
+                        action_payload = pick_action(obs.model_dump(), attempted)
+                        action = CloudCostAction.model_validate(action_payload)
+                    else:
+                        try:
+                            action = _llm_action(
+                                client,
+                                obs,
+                                step,
+                                model_name=model_name,
+                                strict=STRICT_ACTION_MODE,
+                            )
+                        except Exception as exc:
+                            if STRICT_ACTION_MODE:
+                                strict_failure = True
+                                steps_taken = step
+                                log_step(step=step, action="invalid_action()", reward=0.0, done=True, error=str(exc))
+                                done = True
+                                break
+                            action = CloudCostAction(command="skip", resource_id="", params={})
 
-                rewards.append(result.reward)
-                steps_taken = step
+                    attempted.add((action.command, action.resource_id))
+                    result = env.step(action)
+                    obs = result.observation
+                    done = result.done
 
-                error = obs.sla_violations[0] if obs.sla_violations else None
-                action_str = f"{action.command}({action.resource_id})"
-                log_step(step=step, action=action_str, reward=result.reward, done=done, error=error)
+                    rewards.append(result.reward)
+                    steps_taken = step
+
+                    error = obs.sla_violations[0] if obs.sla_violations else None
+                    action_str = f"{action.command}({action.resource_id})"
+                    log_step(step=step, action=action_str, reward=result.reward, done=done, error=error)
+
+            except Exception as exc:
+                task_failed = True
+                unexpected_errors.append(f"task={task_name}: {exc}")
+                # Emit a terminal step record for hard failures so logs stay parseable.
+                fail_step = steps_taken + 1 if steps_taken > 0 else 1
+                log_step(step=fail_step, action="exception()", reward=0.0, done=True, error=str(exc))
 
             raw_score = sum(rewards)
             score = max(0.0, min(1.0, raw_score))
-            success = (score >= 0.1) and not strict_failure
+            success = (score >= 0.1) and not strict_failure and not task_failed
             log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+
+        if unexpected_errors:
+            raise RuntimeError(" | ".join(unexpected_errors))
     finally:
         env.close()
 
