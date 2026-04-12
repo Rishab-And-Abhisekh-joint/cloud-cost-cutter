@@ -21,6 +21,28 @@ The repository now includes deployment-ready assets for:
 - `rightsize` (medium): downsize over-provisioned resources while preserving SLAs.
 - `full_optimization` (hard): combine cleanup, scheduling, rightsizing, snapshot cleanup, and reservations.
 
+## Action And Observation Spaces
+
+Action space (typed model: `CloudCostAction`):
+
+- `command`: one of `terminate`, `rightsize`, `stop`, `schedule`, `delete_snapshot`, `purchase_reservation`, `detach_ip`, `release_ip`, `skip`, `inspect`
+- `resource_id`: target resource identifier
+- `params`: command-specific arguments (for example `{"new_type": "m5.xlarge"}` for rightsizing)
+
+Observation space (typed model: `CloudCostObservation`):
+
+- `resources_summary`: compact list of resources with type, status, monthly cost, risk, and waste signal
+- `total_monthly_cost`: current monthly spend estimate
+- `savings_achieved`: cumulative monthly savings achieved in the episode
+- `waste_remaining`: estimated remaining savings opportunity
+- `last_action_result`: server-side action result message
+- `sla_violations`: SLA violations emitted for the latest step
+- `recommendations`: top ranked suggestions for next actions
+- `steps_remaining`: remaining episode budget
+- `current_score`: normalized score in `[0, 1]`
+
+State space (typed model: `CloudCostState`) is available via `GET /state` and includes episode id, task name, step count, spend deltas, violations count, resources modified, max steps, and done flag.
+
 ## Quick Start
 
 ```bash
@@ -51,7 +73,7 @@ set ENV_BASE_URL=http://127.0.0.1:8000
 set RUN_SEED=42
 set HF_TOKEN=your_token
 set MODEL_NAME=Qwen/Qwen2.5-72B-Instruct
-set LLM_API_BASE_URL=https://router.huggingface.co/v1
+set API_BASE_URL=https://router.huggingface.co/v1
 python inference_llm.py
 ```
 
@@ -61,7 +83,7 @@ Strict reliability benchmarking mode (fail fast on malformed/invalid model actio
 set ENV_BASE_URL=http://127.0.0.1:8000
 set HF_TOKEN=your_token
 set MODEL_NAME=Qwen/Qwen2.5-72B-Instruct
-set LLM_API_BASE_URL=https://router.huggingface.co/v1
+set API_BASE_URL=https://router.huggingface.co/v1
 set STRICT_ACTION_MODE=true
 python inference_llm.py
 ```
@@ -206,7 +228,7 @@ Required for LLM runner (unless fallback mode is enabled):
 
 - One credential: `HF_TOKEN` or `API_KEY` or `OPENAI_API_KEY`
 - `MODEL_NAME`
-- `LLM_API_BASE_URL`
+- `API_BASE_URL`
 
 Common optional parameters:
 
@@ -217,6 +239,11 @@ Common optional parameters:
 - `MAX_STEPS`
 - `TEMPERATURE`
 - `MAX_TOKENS`
+
+LLM endpoint variable notes:
+
+- Preferred: `API_BASE_URL`
+- Backward-compatible alias: `LLM_API_BASE_URL`
 
 Frontend parameter:
 
@@ -229,6 +256,16 @@ Per step:
 `reward = savings_component + efficiency_bonus - sla_penalty - destruction_penalty`
 
 Where savings are normalized by theoretical max possible savings for the episode.
+
+## Baseline Reproducibility
+
+Reference baseline run (heuristic fallback, `MAX_STEPS=8`, production API):
+
+- `cleanup`: `score=0.70`, rewards=`0.22,0.22,0.22,0.02,0.02,0.01,0.00,0.00`
+- `rightsize`: `score=0.92`, rewards=`0.28,0.28,0.15,0.09,0.09,0.01,0.00,0.00`
+- `full_optimization`: `score=1.00`, rewards=`0.17,0.17,0.17,0.17,0.08,0.08,0.08,0.08`
+
+These scores are reproducible with deterministic task seeds and the same environment settings.
 
 ## Project Structure
 

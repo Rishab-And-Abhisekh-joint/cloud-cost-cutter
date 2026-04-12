@@ -20,8 +20,9 @@ TEMPERATURE = float(os.getenv("TEMPERATURE", "0.3"))
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "300"))
 STRICT_ACTION_MODE = os.getenv("STRICT_ACTION_MODE", "false").lower() == "true"
 
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY")
-LLM_API_BASE_URL = os.getenv("LLM_API_BASE_URL", os.getenv("API_BASE_URL", "https://router.huggingface.co/v1"))
+HF_TOKEN = os.getenv("HF_TOKEN")
+API_BASE_URL = os.getenv("API_BASE_URL", os.getenv("LLM_API_BASE_URL", "https://router.huggingface.co/v1"))
+API_KEY = HF_TOKEN or os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY")
 ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://127.0.0.1:8000")
 RUN_SEED = os.getenv("RUN_SEED")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
@@ -167,9 +168,15 @@ def _normalize_action_payload(raw: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _llm_action(client: OpenAI, obs: CloudCostObservation, step: int, strict: bool = False) -> CloudCostAction:
+def _llm_action(
+    client: OpenAI,
+    obs: CloudCostObservation,
+    step: int,
+    model_name: str,
+    strict: bool = False,
+) -> CloudCostAction:
     completion = client.chat.completions.create(
-        model=MODEL_NAME,
+        model=model_name,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": _build_user_prompt(obs, step)},
@@ -190,23 +197,23 @@ def _llm_action(client: OpenAI, obs: CloudCostObservation, step: int, strict: bo
         return CloudCostAction(command="skip", resource_id="", params={})
 
 
-def run() -> None:
-    client: OpenAI | None = None
-    if API_KEY:
-        client = OpenAI(base_url=LLM_API_BASE_URL, api_key=API_KEY)
-    elif STRICT_ACTION_MODE:
+def run(client_override: OpenAI | None = None, model_override: str | None = None) -> None:
+    model_name = model_override or MODEL_NAME
+    client = client_override
+
+    if client is None and API_KEY:
+        client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+
+    if client is None and STRICT_ACTION_MODE:
         raise RuntimeError(
             "STRICT_ACTION_MODE=true requires LLM credentials. "
             "Set HF_TOKEN, API_KEY, or OPENAI_API_KEY."
         )
-    elif not ALLOW_HEURISTIC_FALLBACK:
+    if client is None and not ALLOW_HEURISTIC_FALLBACK:
         raise RuntimeError(
             "Missing API credential. Set HF_TOKEN, API_KEY, or OPENAI_API_KEY; "
             "or enable ALLOW_HEURISTIC_FALLBACK=true."
         )
-    else:
-        print("[WARN] Missing API credential; using heuristic fallback policy.", flush=True)
-
     env = EnvClient(base_url=ENV_BASE_URL)
 
     try:
@@ -218,7 +225,7 @@ def run() -> None:
 
             seed = int(RUN_SEED) if RUN_SEED is not None else None
             obs = env.reset(task_name, seed=seed)
-            log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME if client else "heuristic-fallback")
+            log_start(task=task_name, env=BENCHMARK, model=model_name if client else "heuristic-fallback")
 
             done = False
             for step in range(1, MAX_STEPS + 1):
@@ -230,7 +237,13 @@ def run() -> None:
                     action = CloudCostAction.model_validate(action_payload)
                 else:
                     try:
-                        action = _llm_action(client, obs, step, strict=STRICT_ACTION_MODE)
+                        action = _llm_action(
+                            client,
+                            obs,
+                            step,
+                            model_name=model_name,
+                            strict=STRICT_ACTION_MODE,
+                        )
                     except Exception as exc:
                         if STRICT_ACTION_MODE:
                             strict_failure = True
@@ -238,7 +251,6 @@ def run() -> None:
                             log_step(step=step, action="invalid_action()", reward=0.0, done=True, error=str(exc))
                             done = True
                             break
-                        print(f"[DEBUG] LLM request failed on step {step}: {exc}", flush=True)
                         action = CloudCostAction(command="skip", resource_id="", params={})
 
                 attempted.add((action.command, action.resource_id))
