@@ -11,3 +11,6 @@ server/**
 uv.lock
 inference_llm.py
 scripts/**
+*.egg-info/**
+__pycache__/**
+.pytest_cache/**

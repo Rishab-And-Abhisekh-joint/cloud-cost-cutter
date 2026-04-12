@@ -25,6 +25,9 @@ The repository now includes deployment-ready assets for:
 - Railway backend (`Dockerfile`, `railway.json`)
 - Vercel frontend dashboard (`frontend/`)
 
+For Hugging Face Space submission, only the API runtime is required.
+No custom UI is needed; lightweight `/` and `/web` responses are sufficient.
+
 ## Tasks
 
 - `cleanup` (easy): remove clearly idle/orphaned resources.
