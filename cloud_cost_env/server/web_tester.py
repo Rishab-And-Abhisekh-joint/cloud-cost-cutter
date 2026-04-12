@@ -3,120 +3,119 @@ TESTER_HTML = """<!doctype html>
 <head>
   <meta charset=\"utf-8\" />
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-  <title>CloudCostEnv Test Console</title>
+  <title>CloudCostEnv One-Input Tester</title>
   <style>
     :root {
-      --bg: #081424;
-      --panel: #11263d;
-      --text: #e8f0f8;
-      --muted: #93acc4;
-      --ok: #39d98a;
+      --bg: #0a1422;
+      --panel: #12243a;
+      --panel-soft: #0f2033;
+      --text: #e8eff7;
+      --muted: #9db0c3;
+      --accent: #5db7ff;
+      --ok: #38d68f;
       --warn: #ffcc66;
-      --bad: #ff6d6d;
-      --accent: #4da3ff;
-      --border: #2a4460;
+      --bad: #ff7575;
+      --border: #29415d;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
-      font-family: "Segoe UI", Tahoma, sans-serif;
-      background: radial-gradient(circle at 20% 10%, #17385a 0%, transparent 35%),
-                  radial-gradient(circle at 80% 0%, #2d2f46 0%, transparent 40%),
-                  var(--bg);
       color: var(--text);
+      font-family: \"Segoe UI\", Tahoma, sans-serif;
+      background: radial-gradient(circle at 15% 0%, #1d3a5b 0%, transparent 42%),
+                  radial-gradient(circle at 95% 0%, #2a354c 0%, transparent 35%),
+                  var(--bg);
     }
 
-    .shell {
-      max-width: 1200px;
+    .page {
+      max-width: 980px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 24px 16px 40px;
       display: grid;
       gap: 14px;
-    }
-
-    .hero {
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: rgba(17, 38, 61, 0.75);
-      padding: 16px;
-    }
-
-    .hero h1 {
-      margin: 0;
-      font-size: 1.6rem;
-    }
-
-    .hero p {
-      margin: 8px 0 0;
-      color: var(--muted);
-    }
-
-    .grid {
-      display: grid;
-      gap: 14px;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     }
 
     .panel {
       border: 1px solid var(--border);
       border-radius: 14px;
-      background: rgba(17, 38, 61, 0.75);
+      background: rgba(18, 36, 58, 0.85);
       padding: 14px;
     }
 
-    .panel h2 {
-      margin: 0 0 10px;
-      font-size: 1.1rem;
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(1.4rem, 3vw, 2rem);
     }
 
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 10px;
+    .hero p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .hero code {
+      color: #d8e8ff;
+      background: #0c1a2b;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0 4px;
     }
 
     label {
-      display: grid;
-      gap: 6px;
+      display: block;
       color: var(--muted);
-      font-size: 0.88rem;
-      min-width: 150px;
-      flex: 1;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
     }
 
-    input, select, textarea, button {
+    textarea,
+    button {
       font: inherit;
       border-radius: 10px;
-      border: 1px solid var(--border);
-    }
-
-    input, select, textarea {
-      color: var(--text);
-      background: #0d1f33;
-      padding: 8px 10px;
     }
 
     textarea {
-      min-height: 72px;
-      resize: vertical;
       width: 100%;
+      min-height: 170px;
+      padding: 10px;
+      resize: vertical;
+      color: var(--text);
+      background: #0e1e31;
+      border: 1px solid var(--border);
+      line-height: 1.35;
+    }
+
+    .hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     button {
-      background: #123251;
-      color: var(--text);
       padding: 8px 12px;
+      color: var(--text);
+      background: #10304d;
+      border: 1px solid var(--border);
       cursor: pointer;
     }
 
     button.primary {
-      background: linear-gradient(120deg, #3f90ff, #63b6ff);
-      color: #061423;
       border: none;
+      color: #07192a;
       font-weight: 700;
+      background: linear-gradient(120deg, #55a9ff, #86ccff);
     }
 
     button:disabled {
@@ -125,151 +124,169 @@ TESTER_HTML = """<!doctype html>
     }
 
     .status {
-      margin: 0;
-      padding: 8px 10px;
+      margin: 12px 0 0;
+      padding: 10px;
       border-radius: 10px;
+      background: var(--panel-soft);
       border: 1px solid var(--border);
-      background: #0d1f33;
       color: var(--muted);
     }
 
-    .status.ok { color: var(--ok); }
-    .status.warn { color: var(--warn); }
-    .status.bad { color: var(--bad); }
-
-    pre {
-      margin: 10px 0 0;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #091728;
-      padding: 10px;
-      max-height: 380px;
-      overflow: auto;
-      font-size: 0.84rem;
-      line-height: 1.35;
-      color: #d5e9ff;
-      white-space: pre-wrap;
-      word-break: break-word;
+    .status.ok {
+      color: var(--ok);
     }
 
-    .cards {
+    .status.warn {
+      color: var(--warn);
+    }
+
+    .status.bad {
+      color: var(--bad);
+    }
+
+    .stats {
       display: grid;
       gap: 10px;
-      margin-top: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
 
-    .card {
+    .stat {
       border: 1px solid var(--border);
       border-radius: 10px;
-      background: #0d1f33;
+      background: #0e1f32;
       padding: 10px;
     }
 
-    .card p {
-      margin: 0 0 6px;
+    .stat p {
+      margin: 0;
       color: var(--muted);
-      font-size: 0.88rem;
+      font-size: 0.8rem;
     }
 
-    .card strong {
+    .stat strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--text);
+      font-size: 1.05rem;
+    }
+
+    .list {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #0f1f33;
+      padding: 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .item strong {
       color: var(--text);
     }
 
-    .tiny {
-      color: var(--muted);
-      font-size: 0.82rem;
+    pre {
       margin: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #091524;
+      padding: 10px;
+      max-height: 380px;
+      overflow: auto;
+      color: #d8e9ff;
+      font-size: 0.83rem;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
   </style>
 </head>
 <body>
-  <main class=\"shell\">
-    <section class=\"hero\">
-      <h1>CloudCostEnv Test Console</h1>
-      <p>Use this UI to test reset, step, state, profile, and live action flows without external tooling.</p>
+  <main class=\"page\">
+    <section class=\"panel hero\">
+      <h1>CloudCostEnv One-Input Tester</h1>
+      <p>
+        Use one input box for everything. Default is deterministic seed data
+        (<code>task=full_optimization</code>, <code>seed=777</code>).
+        You can submit JSON or key-value text.
+      </p>
     </section>
 
-    <section class=\"grid\">
-      <article class=\"panel\">
-        <h2>Episode Controls</h2>
-        <div class=\"row\">
-          <label>
-            Task
-            <select id=\"task\">
-              <option value=\"cleanup\">cleanup</option>
-              <option value=\"rightsize\">rightsize</option>
-              <option value=\"full_optimization\" selected>full_optimization</option>
-            </select>
-          </label>
-          <label>
-            Seed
-            <input id=\"seed\" value=\"777\" />
-          </label>
-        </div>
-        <div class=\"row\">
-          <button class=\"primary\" id=\"resetBtn\">Reset Episode</button>
-          <button id=\"healthBtn\">Health</button>
-          <button id=\"profileBtn\">Profile</button>
-          <button id=\"stateBtn\">State</button>
-        </div>
-      </article>
+    <section class=\"panel\">
+      <label for=\"scenarioInput\">Single Input</label>
+      <textarea id=\"scenarioInput\"></textarea>
+      <p class=\"hint\">
+        Modes: <strong>preview</strong>, <strong>dry</strong>, <strong>apply</strong>, <strong>step</strong>.<br/>
+        JSON example: {\"task\":\"cleanup\",\"seed\":42,\"mode\":\"dry\"}<br/>
+        Key-value example: task=rightsize seed=123 mode=step command=skip
+      </p>
+      <div class=\"actions\">
+        <button class=\"primary\" id=\"runBtn\">Run</button>
+        <button id=\"previewExampleBtn\">Example: Preview</button>
+        <button id=\"dryExampleBtn\">Example: Dry Run</button>
+        <button id=\"stepExampleBtn\">Example: Step</button>
+      </div>
+      <p id=\"status\" class=\"status\">Ready.</p>
+    </section>
 
-      <article class=\"panel\">
-        <h2>Manual Step Action</h2>
-        <div class=\"row\">
-          <label>
-            Command
-            <select id=\"command\">
-              <option>terminate</option>
-              <option>rightsize</option>
-              <option>stop</option>
-              <option>schedule</option>
-              <option>delete_snapshot</option>
-              <option>purchase_reservation</option>
-              <option selected>detach_ip</option>
-              <option>release_ip</option>
-              <option>skip</option>
-              <option>inspect</option>
-            </select>
-          </label>
-          <label>
-            Resource ID
-            <input id=\"resourceId\" placeholder=\"i-full-008 / vol-full-000 / ...\" />
-          </label>
-        </div>
-        <label>
-          Params JSON
-          <textarea id=\"params\">{}</textarea>
-        </label>
-        <div class=\"row\">
-          <button class=\"primary\" id=\"stepBtn\">Run Step</button>
-        </div>
-      </article>
+    <section class=\"panel\">
+      <h2 style=\"margin:0 0 10px;\">Summary</h2>
+      <div class=\"stats\" id=\"stats\"></div>
+    </section>
 
-      <article class=\"panel\">
-        <h2>Live Dashboard Actions</h2>
-        <div class=\"row\">
-          <button class=\"primary\" id=\"liveBtn\">Load Recommendations</button>
-        </div>
-        <p class=\"tiny\" id=\"liveMeta\">No live data loaded.</p>
-        <div class=\"cards\" id=\"recommendations\"></div>
-      </article>
+    <section class=\"panel\">
+      <h2 style=\"margin:0 0 10px;\">Top Recommendations</h2>
+      <div class=\"list\" id=\"recommendations\"></div>
+    </section>
 
-      <article class=\"panel\" style=\"grid-column: 1 / -1;\">
-        <h2>API Output</h2>
-        <p id=\"status\" class=\"status\">Ready.</p>
-        <pre id=\"output\">{}</pre>
-      </article>
+    <section class=\"panel\">
+      <h2 style=\"margin:0 0 10px;\">Output JSON</h2>
+      <pre id=\"output\">{}</pre>
     </section>
   </main>
 
   <script>
+    const DEFAULT_INPUT = `{
+  \"task\": \"full_optimization\",
+  \"seed\": 777,
+  \"mode\": \"preview\"
+}`;
+
+    const PREVIEW_EXAMPLE = `{
+  \"task\": \"full_optimization\",
+  \"seed\": 777,
+  \"mode\": \"preview\"
+}`;
+
+    const DRY_EXAMPLE = `{
+  \"task\": \"full_optimization\",
+  \"seed\": 777,
+  \"mode\": \"dry\"
+}`;
+
+    const STEP_EXAMPLE = `{
+  \"task\": \"cleanup\",
+  \"seed\": 42,
+  \"mode\": \"step\",
+  \"command\": \"skip\",
+  \"resource_id\": \"\",
+  \"params\": {}
+}`;
+
     const byId = (id) => document.getElementById(id);
+    const inputEl = byId("scenarioInput");
     const statusEl = byId("status");
     const outputEl = byId("output");
+    const statsEl = byId("stats");
     const recsEl = byId("recommendations");
-    const liveMetaEl = byId("liveMeta");
+
     let busy = false;
+    inputEl.value = DEFAULT_INPUT;
 
     function setBusy(nextBusy) {
       busy = nextBusy;
@@ -283,8 +300,89 @@ TESTER_HTML = """<!doctype html>
       statusEl.className = `status ${mode || ""}`.trim();
     }
 
-    function showOutput(title, data) {
-      outputEl.textContent = JSON.stringify({ title, data }, null, 2);
+    function renderJson(data) {
+      outputEl.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function normalizeValue(raw) {
+      const value = String(raw).trim();
+      if (value === "true") {
+        return true;
+      }
+      if (value === "false") {
+        return false;
+      }
+      if (/^-?\\d+$/.test(value)) {
+        return Number(value);
+      }
+      if ((value.startsWith("{") && value.endsWith("}")) || (value.startsWith("[") && value.endsWith("]"))) {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      }
+      return value.replace(/^\"|\"$/g, "").replace(/^'|'$/g, "");
+    }
+
+    function parseKeyValueInput(raw) {
+      const parsed = {};
+      const regex = /([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*([^\\n,]+)/g;
+      let match;
+      while ((match = regex.exec(raw)) !== null) {
+        parsed[match[1]] = normalizeValue(match[2]);
+      }
+      return parsed;
+    }
+
+    function parseInput(raw) {
+      const fallback = {
+        task: "full_optimization",
+        seed: 777,
+        mode: "preview"
+      };
+
+      const text = String(raw || "").trim();
+      if (!text) {
+        return fallback;
+      }
+
+      let data = null;
+      try {
+        const json = JSON.parse(text);
+        if (json && typeof json === "object") {
+          data = json;
+        }
+      } catch {
+        data = parseKeyValueInput(text);
+      }
+
+      const merged = { ...fallback, ...(data || {}) };
+      merged.task = String(merged.task || fallback.task).trim() || fallback.task;
+      merged.mode = String(merged.mode || fallback.mode).toLowerCase().trim() || fallback.mode;
+
+      const seedValue = Number(merged.seed);
+      merged.seed = Number.isFinite(seedValue) ? seedValue : fallback.seed;
+
+      if (merged.params == null) {
+        merged.params = {};
+      }
+      if (typeof merged.params === "string") {
+        try {
+          merged.params = JSON.parse(merged.params);
+        } catch {
+          merged.params = {};
+        }
+      }
+      if (typeof merged.params !== "object" || Array.isArray(merged.params)) {
+        merged.params = {};
+      }
+
+      if (merged.apply == null) {
+        merged.apply = merged.mode === "apply";
+      }
+
+      return merged;
     }
 
     async function api(path, method = "GET", body = null) {
@@ -297,217 +395,138 @@ TESTER_HTML = """<!doctype html>
       }
 
       const response = await fetch(path, options);
-      const text = await response.text();
-      let parsed = text;
+      const rawText = await response.text();
+      let payload = rawText;
       try {
-        parsed = JSON.parse(text);
+        payload = JSON.parse(rawText);
       } catch {
-        parsed = text;
+        payload = rawText;
       }
 
       if (!response.ok) {
-        const message = typeof parsed === "object" ? JSON.stringify(parsed) : String(parsed);
+        const message = typeof payload === "object" ? JSON.stringify(payload) : String(payload);
         throw new Error(message || `HTTP ${response.status}`);
-      }
-
-      return parsed;
-    }
-
-    function currentTaskSeed() {
-      const taskName = byId("task").value;
-      const seedRaw = byId("seed").value.trim();
-      const seed = seedRaw === "" ? null : Number(seedRaw);
-      return { taskName, seed: Number.isFinite(seed) ? seed : null };
-    }
-
-    async function loadLiveRecommendations() {
-      const { taskName, seed } = currentTaskSeed();
-      const params = new URLSearchParams({ task_name: taskName });
-      if (seed !== null) {
-        params.set("seed", String(seed));
-      }
-
-      const payload = await api(`/live/dashboard?${params.toString()}`);
-      liveMetaEl.textContent =
-        `Region ${payload.region} | Potential savings $${payload.potential_monthly_savings_usd.toFixed(2)} | ` +
-        `Can apply: ${payload.can_apply_actions ? "yes" : "no"}`;
-
-      recsEl.innerHTML = "";
-      const recs = payload.recommendations || [];
-      if (!recs.length) {
-        recsEl.innerHTML = "<p class='tiny'>No recommendations returned.</p>";
-        return payload;
-      }
-
-      for (const rec of recs) {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML =
-          `<p><strong>${rec.action_type}</strong> on ${rec.resource_id}</p>` +
-          `<p>${rec.reason}</p>` +
-          `<p>Risk: ${rec.risk} | Est: $${rec.estimated_monthly_savings_usd.toFixed(2)}</p>`;
-
-        const actions = document.createElement("div");
-        actions.className = "row";
-
-        const dryBtn = document.createElement("button");
-        dryBtn.textContent = "Dry Run";
-        dryBtn.onclick = async () => {
-          await runLiveAction(rec.action_type, rec.resource_id, false);
-        };
-
-        const applyBtn = document.createElement("button");
-        applyBtn.textContent = "Apply";
-        applyBtn.className = "primary";
-        applyBtn.disabled = !payload.can_apply_actions;
-        applyBtn.onclick = async () => {
-          await runLiveAction(rec.action_type, rec.resource_id, true);
-        };
-
-        actions.appendChild(dryBtn);
-        actions.appendChild(applyBtn);
-        card.appendChild(actions);
-        recsEl.appendChild(card);
       }
 
       return payload;
     }
 
-    async function runLiveAction(actionType, resourceId, apply) {
+    function renderSummary(result) {
+      const cards = [
+        ["Task", result.config.task],
+        ["Seed", String(result.config.seed)],
+        ["Mode", result.config.mode],
+        ["Live Recommendations", String(result.live_dashboard.recommendations.length)],
+        ["Potential Savings", `$${Number(result.live_dashboard.potential_monthly_savings_usd || 0).toFixed(2)}`],
+        ["Last Action", result.action_result ? (result.action_result.message || "done") : "none"]
+      ];
+
+      statsEl.innerHTML = "";
+      for (const [label, value] of cards) {
+        const el = document.createElement("article");
+        el.className = "stat";
+        el.innerHTML = `<p>${label}</p><strong>${value}</strong>`;
+        statsEl.appendChild(el);
+      }
+    }
+
+    function renderRecommendations(live) {
+      recsEl.innerHTML = "";
+      const recs = live.recommendations || [];
+      if (!recs.length) {
+        recsEl.innerHTML = "<div class='item'>No recommendations available.</div>";
+        return;
+      }
+
+      for (const rec of recs.slice(0, 6)) {
+        const item = document.createElement("div");
+        item.className = "item";
+        item.innerHTML =
+          `<strong>${rec.action_type}</strong> on <strong>${rec.resource_id}</strong><br/>` +
+          `${rec.reason}<br/>` +
+          `Risk: ${rec.risk} | Estimated monthly savings: $${Number(rec.estimated_monthly_savings_usd || 0).toFixed(2)}`;
+        recsEl.appendChild(item);
+      }
+    }
+
+    async function runScenario() {
       if (busy) {
         return;
       }
+
+      let config;
+      try {
+        config = parseInput(inputEl.value);
+      } catch (err) {
+        setStatus(`Input parse failed: ${err.message}`, "bad");
+        return;
+      }
+
       try {
         setBusy(true);
-        setStatus(`Running ${apply ? "apply" : "dry-run"} action...`, "warn");
-        const payload = await api("/live/action", "POST", {
-          action_type: actionType,
-          resource_id: resourceId,
-          apply
-        });
-        setStatus(payload.message || "Live action complete", payload.ok ? "ok" : "bad");
-        showOutput("live_action", payload);
-        await loadLiveRecommendations();
+        setStatus("Running seeded test flow...", "warn");
+
+        const health = await api("/health");
+        const reset = await api("/reset", "POST", { task_name: config.task, seed: config.seed });
+        const profile = await api(`/profile?task_name=${encodeURIComponent(config.task)}&seed=${encodeURIComponent(String(config.seed))}`);
+        const live = await api(`/live/dashboard?task_name=${encodeURIComponent(config.task)}&seed=${encodeURIComponent(String(config.seed))}`);
+
+        let actionResult = null;
+        if (config.mode === "dry" || config.mode === "apply") {
+          const chosenAction = config.action_type || (live.recommendations[0] ? live.recommendations[0].action_type : null);
+          const chosenResource = config.resource_id || (live.recommendations[0] ? live.recommendations[0].resource_id : null);
+
+          if (chosenAction && chosenResource) {
+            actionResult = await api("/live/action", "POST", {
+              action_type: chosenAction,
+              resource_id: chosenResource,
+              apply: Boolean(config.apply)
+            });
+          }
+        }
+
+        if (config.mode === "step") {
+          const command = String(config.command || "skip");
+          const resourceId = String(config.resource_id || "");
+          actionResult = await api("/step", "POST", {
+            command,
+            resource_id: resourceId,
+            params: config.params || {}
+          });
+        }
+
+        const state = await api("/state");
+
+        const result = {
+          config,
+          health,
+          reset,
+          profile,
+          live_dashboard: live,
+          action_result: actionResult,
+          state
+        };
+
+        renderSummary(result);
+        renderRecommendations(live);
+        renderJson(result);
+        setStatus("Done. Output generated from seeded data.", "ok");
       } catch (err) {
-        setStatus(`Live action failed: ${err.message}`, "bad");
+        setStatus(`Run failed: ${err.message}`, "bad");
       } finally {
         setBusy(false);
       }
     }
 
-    byId("healthBtn").onclick = async () => {
-      if (busy) return;
-      try {
-        setBusy(true);
-        const payload = await api("/health");
-        setStatus("Health check passed", "ok");
-        showOutput("health", payload);
-      } catch (err) {
-        setStatus(`Health failed: ${err.message}`, "bad");
-      } finally {
-        setBusy(false);
-      }
-    };
-
-    byId("resetBtn").onclick = async () => {
-      if (busy) return;
-      const { taskName, seed } = currentTaskSeed();
-      try {
-        setBusy(true);
-        setStatus("Resetting episode...", "warn");
-        const payload = await api("/reset", "POST", { task_name: taskName, seed });
-        setStatus(`Episode reset for ${taskName}`, "ok");
-        showOutput("reset", payload);
-        await loadLiveRecommendations();
-      } catch (err) {
-        setStatus(`Reset failed: ${err.message}`, "bad");
-      } finally {
-        setBusy(false);
-      }
-    };
-
-    byId("profileBtn").onclick = async () => {
-      if (busy) return;
-      const { taskName, seed } = currentTaskSeed();
-      const params = new URLSearchParams({ task_name: taskName });
-      if (seed !== null) {
-        params.set("seed", String(seed));
-      }
-      try {
-        setBusy(true);
-        const payload = await api(`/profile?${params.toString()}`);
-        setStatus("Profile loaded", "ok");
-        showOutput("profile", payload);
-      } catch (err) {
-        setStatus(`Profile failed: ${err.message}`, "bad");
-      } finally {
-        setBusy(false);
-      }
-    };
-
-    byId("stateBtn").onclick = async () => {
-      if (busy) return;
-      try {
-        setBusy(true);
-        const payload = await api("/state");
-        setStatus("State loaded", "ok");
-        showOutput("state", payload);
-      } catch (err) {
-        setStatus(`State failed: ${err.message}`, "bad");
-      } finally {
-        setBusy(false);
-      }
-    };
-
-    byId("stepBtn").onclick = async () => {
-      if (busy) return;
-      const command = byId("command").value;
-      const resourceId = byId("resourceId").value.trim();
-      let params = {};
-      try {
-        params = JSON.parse(byId("params").value || "{}");
-      } catch {
-        setStatus("Params must be valid JSON", "bad");
-        return;
-      }
-
-      try {
-        setBusy(true);
-        setStatus("Running step...", "warn");
-        const payload = await api("/step", "POST", {
-          command,
-          resource_id: resourceId,
-          params
-        });
-        setStatus(`Step complete. Reward ${payload.reward}`, "ok");
-        showOutput("step", payload);
-        await loadLiveRecommendations();
-      } catch (err) {
-        setStatus(`Step failed: ${err.message}`, "bad");
-      } finally {
-        setBusy(false);
-      }
-    };
-
-    byId("liveBtn").onclick = async () => {
-      if (busy) return;
-      try {
-        setBusy(true);
-        setStatus("Loading live dashboard...", "warn");
-        const payload = await loadLiveRecommendations();
-        setStatus(`Loaded ${payload.recommendations.length} recommendations`, "ok");
-        showOutput("live_dashboard", payload);
-      } catch (err) {
-        setStatus(`Live dashboard failed: ${err.message}`, "bad");
-      } finally {
-        setBusy(false);
-      }
-    };
+    byId("runBtn").onclick = runScenario;
+    byId("previewExampleBtn").onclick = () => { inputEl.value = PREVIEW_EXAMPLE; };
+    byId("dryExampleBtn").onclick = () => { inputEl.value = DRY_EXAMPLE; };
+    byId("stepExampleBtn").onclick = () => { inputEl.value = STEP_EXAMPLE; };
 
     (async () => {
       try {
-        const health = await api("/health");
-        setStatus(`Connected: ${health.status}`, "ok");
+        const payload = await api("/health");
+        setStatus(`Connected: ${payload.status}`, "ok");
       } catch {
         setStatus("Backend not reachable", "bad");
       }
