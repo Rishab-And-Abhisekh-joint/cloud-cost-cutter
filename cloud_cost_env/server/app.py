@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -144,6 +144,40 @@ def create_fastapi_app() -> FastAPI:
     def reset(task_name: str, seed: int | None = None):
         try:
             return env.reset(task_name, seed=seed)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/reset")
+    @app.post("/reset/")
+    async def reset_compat(request: Request, task_name: str | None = None, seed: int | None = None):
+        # Some validators call POST /reset without a task path segment.
+        payload: dict[str, object] = {}
+        try:
+            maybe_payload = await request.json()
+            if isinstance(maybe_payload, dict):
+                payload = maybe_payload
+        except Exception:
+            payload = {}
+
+        raw_task = task_name or payload.get("task_name") or payload.get("task") or "cleanup"
+        resolved_task = str(raw_task).strip() if raw_task is not None else "cleanup"
+        if not resolved_task:
+            resolved_task = "cleanup"
+
+        raw_seed = seed if seed is not None else payload.get("seed")
+        resolved_seed: int | None
+        if isinstance(raw_seed, int):
+            resolved_seed = raw_seed
+        elif isinstance(raw_seed, str) and raw_seed.strip():
+            try:
+                resolved_seed = int(raw_seed.strip())
+            except ValueError:
+                resolved_seed = None
+        else:
+            resolved_seed = None
+
+        try:
+            return env.reset(resolved_task, seed=resolved_seed)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
