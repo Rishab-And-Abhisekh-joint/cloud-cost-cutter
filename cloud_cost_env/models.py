@@ -135,3 +135,44 @@ class StepResult(BaseModel):
     reward: float
     done: bool
     info: dict[str, Any] = Field(default_factory=dict)
+
+
+class LiveActionResult(BaseModel):
+    ok: bool
+    executed: bool
+    dry_run: bool
+    action_type: str
+    resource_id: str
+    message: str
+    estimated_monthly_savings_usd: float = 0.0
+    timestamp: str
+
+
+class LiveRecommendation(BaseModel):
+    action_type: Literal["stop_instance", "release_eip", "delete_snapshot", "delete_volume"]
+    resource_id: str
+    resource_name: str
+    reason: str
+    risk: Literal["low", "medium", "high"] = "medium"
+    estimated_monthly_savings_usd: float = 0.0
+
+
+class LiveAwsDashboard(BaseModel):
+    connected: bool
+    account_id: str | None = None
+    account_arn: str | None = None
+    region: str
+    month_to_date_cost_usd: float | None = None
+    potential_monthly_savings_usd: float = 0.0
+    resource_counts: dict[str, int] = Field(default_factory=dict)
+    recommendations: list[LiveRecommendation] = Field(default_factory=list)
+    action_history: list[LiveActionResult] = Field(default_factory=list)
+    can_apply_actions: bool = False
+    errors: list[str] = Field(default_factory=list)
+    updated_at: str
+
+
+class LiveActionRequest(BaseModel):
+    action_type: Literal["stop_instance", "release_eip", "delete_snapshot", "delete_volume"]
+    resource_id: str
+    apply: bool = False
