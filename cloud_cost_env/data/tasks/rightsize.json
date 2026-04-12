@@ -1,0 +1,855 @@
+{
+  "compute_instances": [
+    {
+      "instance_id": "i-right-000",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 13.92,
+      "avg_mem_utilization": 20.8,
+      "p99_cpu_utilization": 45.15,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "payments",
+        "project": "checkout"
+      }
+    },
+    {
+      "instance_id": "i-right-001",
+      "type": "r5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 64,
+      "hourly_cost": 0.504,
+      "avg_cpu_utilization": 9.99,
+      "avg_mem_utilization": 31.34,
+      "p99_cpu_utilization": 52.34,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "payments",
+        "project": "payments-api"
+      }
+    },
+    {
+      "instance_id": "i-right-002",
+      "type": "r5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 64,
+      "hourly_cost": 0.504,
+      "avg_cpu_utilization": 10.0,
+      "avg_mem_utilization": 20.41,
+      "p99_cpu_utilization": 89.35,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "payments",
+        "project": "gateway"
+      }
+    },
+    {
+      "instance_id": "i-right-003",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 14.91,
+      "avg_mem_utilization": 22.8,
+      "p99_cpu_utilization": 63.93,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "payments",
+        "project": "core-api"
+      }
+    },
+    {
+      "instance_id": "i-right-004",
+      "type": "m5.4xlarge",
+      "vcpus": 16,
+      "ram_gb": 64,
+      "hourly_cost": 0.768,
+      "avg_cpu_utilization": 7.92,
+      "avg_mem_utilization": 16.79,
+      "p99_cpu_utilization": 50.94,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "platform",
+        "project": "orders"
+      }
+    },
+    {
+      "instance_id": "i-right-005",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 9.63,
+      "avg_mem_utilization": 23.75,
+      "p99_cpu_utilization": 89.42,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "search",
+        "project": "svc-right-5"
+      }
+    },
+    {
+      "instance_id": "i-right-006",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 13.92,
+      "avg_mem_utilization": 22.18,
+      "p99_cpu_utilization": 54.32,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "payments",
+        "project": "svc-right-6"
+      }
+    },
+    {
+      "instance_id": "i-right-007",
+      "type": "r5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 64,
+      "hourly_cost": 0.504,
+      "avg_cpu_utilization": 11.74,
+      "avg_mem_utilization": 30.57,
+      "p99_cpu_utilization": 62.07,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "payments",
+        "project": "svc-right-7"
+      }
+    },
+    {
+      "instance_id": "i-right-008",
+      "type": "r5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 64,
+      "hourly_cost": 0.504,
+      "avg_cpu_utilization": 11.61,
+      "avg_mem_utilization": 28.33,
+      "p99_cpu_utilization": 91.98,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "platform",
+        "project": "svc-right-8"
+      }
+    },
+    {
+      "instance_id": "i-right-009",
+      "type": "m5.4xlarge",
+      "vcpus": 16,
+      "ram_gb": 64,
+      "hourly_cost": 0.768,
+      "avg_cpu_utilization": 11.59,
+      "avg_mem_utilization": 31.25,
+      "p99_cpu_utilization": 58.71,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "platform",
+        "project": "svc-right-9"
+      }
+    },
+    {
+      "instance_id": "i-right-010",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 77.86,
+      "avg_mem_utilization": 67.59,
+      "p99_cpu_utilization": 70.27,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "svc-right-10"
+      }
+    },
+    {
+      "instance_id": "i-right-011",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 68.71,
+      "avg_mem_utilization": 54.61,
+      "p99_cpu_utilization": 89.14,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "svc-right-11"
+      }
+    },
+    {
+      "instance_id": "i-right-012",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 73.92,
+      "avg_mem_utilization": 53.45,
+      "p99_cpu_utilization": 92.78,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "data",
+        "project": "svc-right-12"
+      }
+    },
+    {
+      "instance_id": "i-right-013",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 64.66,
+      "avg_mem_utilization": 83.61,
+      "p99_cpu_utilization": 94.89,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "search",
+        "project": "svc-right-13"
+      }
+    },
+    {
+      "instance_id": "i-right-014",
+      "type": "r5.large",
+      "vcpus": 2,
+      "ram_gb": 16,
+      "hourly_cost": 0.126,
+      "avg_cpu_utilization": 81.07,
+      "avg_mem_utilization": 43.38,
+      "p99_cpu_utilization": 81.63,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "svc-right-14"
+      }
+    },
+    {
+      "instance_id": "i-right-015",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 34.49,
+      "avg_mem_utilization": 57.9,
+      "p99_cpu_utilization": 65.65,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "platform",
+        "project": "svc-right-15"
+      }
+    },
+    {
+      "instance_id": "i-right-016",
+      "type": "r5.large",
+      "vcpus": 2,
+      "ram_gb": 16,
+      "hourly_cost": 0.126,
+      "avg_cpu_utilization": 64.44,
+      "avg_mem_utilization": 36.02,
+      "p99_cpu_utilization": 84.15,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "platform",
+        "project": "svc-right-16"
+      }
+    },
+    {
+      "instance_id": "i-right-017",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 37.98,
+      "avg_mem_utilization": 79.08,
+      "p99_cpu_utilization": 89.67,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "payments",
+        "project": "svc-right-17"
+      }
+    },
+    {
+      "instance_id": "i-right-018",
+      "type": "r5.large",
+      "vcpus": 2,
+      "ram_gb": 16,
+      "hourly_cost": 0.126,
+      "avg_cpu_utilization": 35.4,
+      "avg_mem_utilization": 51.48,
+      "p99_cpu_utilization": 94.63,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "platform",
+        "project": "svc-right-18"
+      }
+    },
+    {
+      "instance_id": "i-right-019",
+      "type": "r5.large",
+      "vcpus": 2,
+      "ram_gb": 16,
+      "hourly_cost": 0.126,
+      "avg_cpu_utilization": 50.72,
+      "avg_mem_utilization": 66.68,
+      "p99_cpu_utilization": 95.06,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "payments",
+        "project": "svc-right-19"
+      }
+    },
+    {
+      "instance_id": "i-right-020",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 51.86,
+      "avg_mem_utilization": 47.28,
+      "p99_cpu_utilization": 67.43,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "payments",
+        "project": "svc-right-20"
+      }
+    },
+    {
+      "instance_id": "i-right-021",
+      "type": "r5.large",
+      "vcpus": 2,
+      "ram_gb": 16,
+      "hourly_cost": 0.126,
+      "avg_cpu_utilization": 59.8,
+      "avg_mem_utilization": 43.01,
+      "p99_cpu_utilization": 85.33,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "svc-right-21"
+      }
+    },
+    {
+      "instance_id": "i-right-022",
+      "type": "c5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 8,
+      "hourly_cost": 0.17,
+      "avg_cpu_utilization": 40.07,
+      "avg_mem_utilization": 82.8,
+      "p99_cpu_utilization": 81.03,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "search",
+        "project": "svc-right-22"
+      }
+    },
+    {
+      "instance_id": "i-right-023",
+      "type": "r5.large",
+      "vcpus": 2,
+      "ram_gb": 16,
+      "hourly_cost": 0.126,
+      "avg_cpu_utilization": 54.74,
+      "avg_mem_utilization": 71.59,
+      "p99_cpu_utilization": 79.1,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "platform",
+        "project": "svc-right-23"
+      }
+    },
+    {
+      "instance_id": "i-right-024",
+      "type": "r5.large",
+      "vcpus": 2,
+      "ram_gb": 16,
+      "hourly_cost": 0.126,
+      "avg_cpu_utilization": 75.81,
+      "avg_mem_utilization": 71.53,
+      "p99_cpu_utilization": 95.39,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "data",
+        "project": "svc-right-24"
+      }
+    },
+    {
+      "instance_id": "i-right-025",
+      "type": "c5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 8,
+      "hourly_cost": 0.17,
+      "avg_cpu_utilization": 54.59,
+      "avg_mem_utilization": 73.17,
+      "p99_cpu_utilization": 69.92,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "search",
+        "project": "svc-right-25"
+      }
+    },
+    {
+      "instance_id": "i-right-026",
+      "type": "c5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 8,
+      "hourly_cost": 0.17,
+      "avg_cpu_utilization": 58.01,
+      "avg_mem_utilization": 62.18,
+      "p99_cpu_utilization": 76.44,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "platform",
+        "project": "svc-right-26"
+      }
+    },
+    {
+      "instance_id": "i-right-027",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 47.04,
+      "avg_mem_utilization": 60.3,
+      "p99_cpu_utilization": 71.3,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "platform",
+        "project": "svc-right-27"
+      }
+    },
+    {
+      "instance_id": "i-right-028",
+      "type": "r5.large",
+      "vcpus": 2,
+      "ram_gb": 16,
+      "hourly_cost": 0.126,
+      "avg_cpu_utilization": 36.07,
+      "avg_mem_utilization": 60.03,
+      "p99_cpu_utilization": 94.64,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "search",
+        "project": "svc-right-28"
+      }
+    },
+    {
+      "instance_id": "i-right-029",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 43.32,
+      "avg_mem_utilization": 63.1,
+      "p99_cpu_utilization": 67.64,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "payments",
+        "project": "svc-right-29"
+      }
+    }
+  ],
+  "storage_volumes": [
+    {
+      "volume_id": "vol-right-000",
+      "size_gb": 180,
+      "type": "SSD",
+      "monthly_cost": 21.6,
+      "attached_to": null,
+      "avg_iops": 0.0,
+      "last_access_days_ago": 62,
+      "snapshots": [
+        {
+          "id": "snap-right-000-00",
+          "age_days": 170,
+          "size_gb": 88.0
+        },
+        {
+          "id": "snap-right-000-01",
+          "age_days": 16,
+          "size_gb": 78.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-right-001",
+      "size_gb": 250,
+      "type": "HDD",
+      "monthly_cost": 17.5,
+      "attached_to": "i-right-011",
+      "avg_iops": 676.55,
+      "last_access_days_ago": 6,
+      "snapshots": [
+        {
+          "id": "snap-right-001-00",
+          "age_days": 163,
+          "size_gb": 113.0
+        },
+        {
+          "id": "snap-right-001-01",
+          "age_days": 33,
+          "size_gb": 13.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-right-002",
+      "size_gb": 250,
+      "type": "SSD",
+      "monthly_cost": 30.0,
+      "attached_to": "i-right-012",
+      "avg_iops": 2046.17,
+      "last_access_days_ago": 4,
+      "snapshots": [
+        {
+          "id": "snap-right-002-00",
+          "age_days": 143,
+          "size_gb": 70.0
+        },
+        {
+          "id": "snap-right-002-01",
+          "age_days": 22,
+          "size_gb": 74.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-right-003",
+      "size_gb": 80,
+      "type": "HDD",
+      "monthly_cost": 5.6,
+      "attached_to": "i-right-013",
+      "avg_iops": 1991.45,
+      "last_access_days_ago": 6,
+      "snapshots": []
+    },
+    {
+      "volume_id": "vol-right-004",
+      "size_gb": 250,
+      "type": "SSD",
+      "monthly_cost": 30.0,
+      "attached_to": "i-right-014",
+      "avg_iops": 853.96,
+      "last_access_days_ago": 4,
+      "snapshots": []
+    },
+    {
+      "volume_id": "vol-right-005",
+      "size_gb": 80,
+      "type": "HDD",
+      "monthly_cost": 5.6,
+      "attached_to": "i-right-015",
+      "avg_iops": 1567.1,
+      "last_access_days_ago": 2,
+      "snapshots": []
+    },
+    {
+      "volume_id": "vol-right-006",
+      "size_gb": 250,
+      "type": "SSD",
+      "monthly_cost": 30.0,
+      "attached_to": "i-right-016",
+      "avg_iops": 891.77,
+      "last_access_days_ago": 5,
+      "snapshots": []
+    },
+    {
+      "volume_id": "vol-right-007",
+      "size_gb": 250,
+      "type": "HDD",
+      "monthly_cost": 17.5,
+      "attached_to": "i-right-017",
+      "avg_iops": 796.79,
+      "last_access_days_ago": 1,
+      "snapshots": []
+    },
+    {
+      "volume_id": "vol-right-008",
+      "size_gb": 250,
+      "type": "SSD",
+      "monthly_cost": 30.0,
+      "attached_to": "i-right-018",
+      "avg_iops": 853.22,
+      "last_access_days_ago": 6,
+      "snapshots": []
+    },
+    {
+      "volume_id": "vol-right-009",
+      "size_gb": 120,
+      "type": "HDD",
+      "monthly_cost": 8.4,
+      "attached_to": "i-right-019",
+      "avg_iops": 1831.98,
+      "last_access_days_ago": 1,
+      "snapshots": []
+    }
+  ],
+  "databases": [
+    {
+      "db_id": "db-right-000",
+      "engine": "postgres",
+      "instance_type": "db.m5.2xlarge",
+      "monthly_cost": 492.48,
+      "avg_cpu": 13.82,
+      "avg_connections": 227.04,
+      "storage_used_pct": 74.12,
+      "multi_az": true,
+      "backup_retention_days": 7,
+      "depends_on": [
+        "i-right-000",
+        "i-right-002",
+        "i-right-004",
+        "i-right-006"
+      ],
+      "tags": {
+        "env": "prod",
+        "service": "orders-right-0"
+      }
+    },
+    {
+      "db_id": "db-right-001",
+      "engine": "postgres",
+      "instance_type": "db.m5.2xlarge",
+      "monthly_cost": 492.48,
+      "avg_cpu": 18.42,
+      "avg_connections": 153.81,
+      "storage_used_pct": 20.88,
+      "multi_az": false,
+      "backup_retention_days": 30,
+      "depends_on": [
+        "i-right-001",
+        "i-right-003",
+        "i-right-005",
+        "i-right-007"
+      ],
+      "tags": {
+        "env": "staging",
+        "service": "orders-right-1"
+      }
+    },
+    {
+      "db_id": "db-right-002",
+      "engine": "sqlserver",
+      "instance_type": "db.m5.xlarge",
+      "monthly_cost": 246.24,
+      "avg_cpu": 64.83,
+      "avg_connections": 74.98,
+      "storage_used_pct": 39.32,
+      "multi_az": false,
+      "backup_retention_days": 7,
+      "depends_on": [],
+      "tags": {
+        "env": "staging",
+        "service": "orders-right-2"
+      }
+    },
+    {
+      "db_id": "db-right-003",
+      "engine": "sqlserver",
+      "instance_type": "db.m5.xlarge",
+      "monthly_cost": 246.24,
+      "avg_cpu": 32.9,
+      "avg_connections": 99.18,
+      "storage_used_pct": 73.76,
+      "multi_az": false,
+      "backup_retention_days": 7,
+      "depends_on": [],
+      "tags": {
+        "env": "staging",
+        "service": "orders-right-3"
+      }
+    },
+    {
+      "db_id": "db-right-004",
+      "engine": "mysql",
+      "instance_type": "db.r5.large",
+      "monthly_cost": 168.48,
+      "avg_cpu": 64.43,
+      "avg_connections": 104.45,
+      "storage_used_pct": 83.12,
+      "multi_az": false,
+      "backup_retention_days": 14,
+      "depends_on": [],
+      "tags": {
+        "env": "staging",
+        "service": "orders-right-4"
+      }
+    },
+    {
+      "db_id": "db-right-005",
+      "engine": "mysql",
+      "instance_type": "db.m5.large",
+      "monthly_cost": 123.12,
+      "avg_cpu": 54.61,
+      "avg_connections": 99.7,
+      "storage_used_pct": 62.14,
+      "multi_az": false,
+      "backup_retention_days": 14,
+      "depends_on": [],
+      "tags": {
+        "env": "staging",
+        "service": "orders-right-5"
+      }
+    }
+  ],
+  "load_balancers": [
+    {
+      "lb_id": "lb-right-000",
+      "type": "public",
+      "monthly_cost": 22.53,
+      "avg_requests_per_sec": 790.88,
+      "attached_targets": 1,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-right-000-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-right-001",
+      "type": "public",
+      "monthly_cost": 34.27,
+      "avg_requests_per_sec": 889.4,
+      "attached_targets": 6,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-right-001-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-right-002",
+      "type": "public",
+      "monthly_cost": 31.07,
+      "avg_requests_per_sec": 330.82,
+      "attached_targets": 8,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-right-002-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-right-003",
+      "type": "public",
+      "monthly_cost": 29.4,
+      "avg_requests_per_sec": 834.62,
+      "attached_targets": 6,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-right-003-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        },
+        {
+          "ip_id": "eip-right-003-01",
+          "attached": false,
+          "monthly_cost": 3.6
+        }
+      ]
+    }
+  ],
+  "sla_requirements": {
+    "checkout": 99.95,
+    "payments-api": 99.95,
+    "gateway": 99.9,
+    "core-api": 99.9,
+    "orders": 99.9
+  },
+  "dependencies": {
+    "i-right-000": [
+      "db-right-000"
+    ],
+    "i-right-001": [
+      "db-right-001"
+    ],
+    "i-right-002": [
+      "db-right-000"
+    ],
+    "i-right-003": [
+      "db-right-001"
+    ],
+    "i-right-004": [
+      "db-right-000"
+    ],
+    "i-right-005": [
+      "db-right-001"
+    ],
+    "i-right-006": [
+      "db-right-000"
+    ],
+    "i-right-007": [
+      "db-right-001"
+    ]
+  },
+  "current_monthly_spend": 7548.03,
+  "target_spend": 5434.58
+}

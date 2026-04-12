@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloud-cost-env"
+version = "1.0.0"
+description = "Cloud cost optimization RL environment — train agents to eliminate cloud waste"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Rishab"}]
+
+dependencies = [
+    "openenv-core>=0.2.0",
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+    "pydantic>=2.7,<3",
+    "httpx>=0.27,<1",
+    "openai>=2.7.2,<3",
+]
+
+[project.scripts]
+server = "cloud_cost_env.server.app:main"
+inference-baseline = "cloud_cost_env.inference:run"
+inference-llm = "cloud_cost_env.inference_llm:run"
+
+[tool.setuptools.packages.find]
+include = ["cloud_cost_env*"]

@@ -1,0 +1,2464 @@
+{
+  "compute_instances": [
+    {
+      "instance_id": "i-full-000",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 1.95,
+      "avg_mem_utilization": 13.92,
+      "p99_cpu_utilization": 18.36,
+      "last_connection_days_ago": 83,
+      "state": "stopped",
+      "tags": {
+        "env": "dev",
+        "team": "data",
+        "project": "deprecated-env"
+      }
+    },
+    {
+      "instance_id": "i-full-001",
+      "type": "m5.4xlarge",
+      "vcpus": 16,
+      "ram_gb": 64,
+      "hourly_cost": 0.768,
+      "avg_cpu_utilization": 2.53,
+      "avg_mem_utilization": 12.77,
+      "p99_cpu_utilization": 10.18,
+      "last_connection_days_ago": 54,
+      "state": "stopped",
+      "tags": {
+        "env": "dev",
+        "team": "data",
+        "project": "deprecated-env"
+      }
+    },
+    {
+      "instance_id": "i-full-002",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 3.47,
+      "avg_mem_utilization": 13.92,
+      "p99_cpu_utilization": 24.42,
+      "last_connection_days_ago": 122,
+      "state": "stopped",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "deprecated-env"
+      }
+    },
+    {
+      "instance_id": "i-full-003",
+      "type": "m5.4xlarge",
+      "vcpus": 16,
+      "ram_gb": 64,
+      "hourly_cost": 0.768,
+      "avg_cpu_utilization": 0.7,
+      "avg_mem_utilization": 10.66,
+      "p99_cpu_utilization": 11.77,
+      "last_connection_days_ago": 104,
+      "state": "stopped",
+      "tags": {
+        "env": "dev",
+        "team": "data",
+        "project": "deprecated-env"
+      }
+    },
+    {
+      "instance_id": "i-full-004",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 1.59,
+      "avg_mem_utilization": 5.48,
+      "p99_cpu_utilization": 17.47,
+      "last_connection_days_ago": 109,
+      "state": "stopped",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "deprecated-env"
+      }
+    },
+    {
+      "instance_id": "i-full-005",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 2.33,
+      "avg_mem_utilization": 5.68,
+      "p99_cpu_utilization": 15.9,
+      "last_connection_days_ago": 67,
+      "state": "stopped",
+      "tags": {
+        "env": "staging",
+        "team": "platform",
+        "project": "deprecated-env"
+      }
+    },
+    {
+      "instance_id": "i-full-006",
+      "type": "m5.4xlarge",
+      "vcpus": 16,
+      "ram_gb": 64,
+      "hourly_cost": 0.768,
+      "avg_cpu_utilization": 0.96,
+      "avg_mem_utilization": 13.51,
+      "p99_cpu_utilization": 21.42,
+      "last_connection_days_ago": 108,
+      "state": "stopped",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "deprecated-env"
+      }
+    },
+    {
+      "instance_id": "i-full-007",
+      "type": "m5.4xlarge",
+      "vcpus": 16,
+      "ram_gb": 64,
+      "hourly_cost": 0.768,
+      "avg_cpu_utilization": 0.99,
+      "avg_mem_utilization": 4.95,
+      "p99_cpu_utilization": 11.11,
+      "last_connection_days_ago": 110,
+      "state": "stopped",
+      "tags": {
+        "env": "dev",
+        "team": "platform",
+        "project": "deprecated-env"
+      }
+    },
+    {
+      "instance_id": "i-full-008",
+      "type": "m5.4xlarge",
+      "vcpus": 16,
+      "ram_gb": 64,
+      "hourly_cost": 0.768,
+      "avg_cpu_utilization": 11.28,
+      "avg_mem_utilization": 20.24,
+      "p99_cpu_utilization": 51.14,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "search",
+        "project": "full-over-8"
+      }
+    },
+    {
+      "instance_id": "i-full-009",
+      "type": "r5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 64,
+      "hourly_cost": 0.504,
+      "avg_cpu_utilization": 7.08,
+      "avg_mem_utilization": 30.46,
+      "p99_cpu_utilization": 94.48,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "full-over-9"
+      }
+    },
+    {
+      "instance_id": "i-full-010",
+      "type": "r5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 64,
+      "hourly_cost": 0.504,
+      "avg_cpu_utilization": 10.48,
+      "avg_mem_utilization": 22.5,
+      "p99_cpu_utilization": 54.18,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "data",
+        "project": "full-over-10"
+      }
+    },
+    {
+      "instance_id": "i-full-011",
+      "type": "r5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 64,
+      "hourly_cost": 0.504,
+      "avg_cpu_utilization": 11.76,
+      "avg_mem_utilization": 24.79,
+      "p99_cpu_utilization": 60.55,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "full-over-11"
+      }
+    },
+    {
+      "instance_id": "i-full-012",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 13.97,
+      "avg_mem_utilization": 21.98,
+      "p99_cpu_utilization": 65.7,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "search",
+        "project": "full-over-12"
+      }
+    },
+    {
+      "instance_id": "i-full-013",
+      "type": "r5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 64,
+      "hourly_cost": 0.504,
+      "avg_cpu_utilization": 8.59,
+      "avg_mem_utilization": 26.58,
+      "p99_cpu_utilization": 96.16,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "search",
+        "project": "full-over-13"
+      }
+    },
+    {
+      "instance_id": "i-full-014",
+      "type": "m5.4xlarge",
+      "vcpus": 16,
+      "ram_gb": 64,
+      "hourly_cost": 0.768,
+      "avg_cpu_utilization": 10.4,
+      "avg_mem_utilization": 24.26,
+      "p99_cpu_utilization": 56.0,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "platform",
+        "project": "full-over-14"
+      }
+    },
+    {
+      "instance_id": "i-full-015",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 14.29,
+      "avg_mem_utilization": 20.27,
+      "p99_cpu_utilization": 54.81,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "data",
+        "project": "full-over-15"
+      }
+    },
+    {
+      "instance_id": "i-full-016",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 6.78,
+      "avg_mem_utilization": 31.9,
+      "p99_cpu_utilization": 46.65,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "platform",
+        "project": "full-over-16"
+      }
+    },
+    {
+      "instance_id": "i-full-017",
+      "type": "r5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 64,
+      "hourly_cost": 0.504,
+      "avg_cpu_utilization": 11.42,
+      "avg_mem_utilization": 19.22,
+      "p99_cpu_utilization": 91.17,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "full-over-17"
+      }
+    },
+    {
+      "instance_id": "i-full-018",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 16.48,
+      "avg_mem_utilization": 33.8,
+      "p99_cpu_utilization": 58.34,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "ml",
+        "project": "full-dev-18"
+      }
+    },
+    {
+      "instance_id": "i-full-019",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 12.79,
+      "avg_mem_utilization": 27.75,
+      "p99_cpu_utilization": 69.97,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "full-dev-19"
+      }
+    },
+    {
+      "instance_id": "i-full-020",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 15.05,
+      "avg_mem_utilization": 25.62,
+      "p99_cpu_utilization": 67.04,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "full-dev-20"
+      }
+    },
+    {
+      "instance_id": "i-full-021",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 10.9,
+      "avg_mem_utilization": 19.68,
+      "p99_cpu_utilization": 49.43,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "ml",
+        "project": "full-dev-21"
+      }
+    },
+    {
+      "instance_id": "i-full-022",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 22.14,
+      "avg_mem_utilization": 40.18,
+      "p99_cpu_utilization": 71.48,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "platform",
+        "project": "full-dev-22"
+      }
+    },
+    {
+      "instance_id": "i-full-023",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 22.72,
+      "avg_mem_utilization": 31.73,
+      "p99_cpu_utilization": 46.54,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "ml",
+        "project": "full-dev-23"
+      }
+    },
+    {
+      "instance_id": "i-full-024",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 17.66,
+      "avg_mem_utilization": 27.16,
+      "p99_cpu_utilization": 46.93,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "ml",
+        "project": "full-dev-24"
+      }
+    },
+    {
+      "instance_id": "i-full-025",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 15.41,
+      "avg_mem_utilization": 36.67,
+      "p99_cpu_utilization": 47.35,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "full-dev-25"
+      }
+    },
+    {
+      "instance_id": "i-full-026",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 23.88,
+      "avg_mem_utilization": 31.3,
+      "p99_cpu_utilization": 49.9,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "ml",
+        "project": "full-dev-26"
+      }
+    },
+    {
+      "instance_id": "i-full-027",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 10.17,
+      "avg_mem_utilization": 35.92,
+      "p99_cpu_utilization": 73.2,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "full-dev-27"
+      }
+    },
+    {
+      "instance_id": "i-full-028",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 15.53,
+      "avg_mem_utilization": 30.43,
+      "p99_cpu_utilization": 51.92,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "ml",
+        "project": "full-dev-28"
+      }
+    },
+    {
+      "instance_id": "i-full-029",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 15.78,
+      "avg_mem_utilization": 41.32,
+      "p99_cpu_utilization": 66.32,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "full-dev-29"
+      }
+    },
+    {
+      "instance_id": "i-full-030",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 57.09,
+      "avg_mem_utilization": 51.79,
+      "p99_cpu_utilization": 96.27,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "checkout"
+      }
+    },
+    {
+      "instance_id": "i-full-031",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 65.42,
+      "avg_mem_utilization": 61.94,
+      "p99_cpu_utilization": 83.07,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "payments-api"
+      }
+    },
+    {
+      "instance_id": "i-full-032",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 42.47,
+      "avg_mem_utilization": 47.76,
+      "p99_cpu_utilization": 82.48,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "gateway"
+      }
+    },
+    {
+      "instance_id": "i-full-033",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 40.66,
+      "avg_mem_utilization": 63.22,
+      "p99_cpu_utilization": 83.51,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "core-platform",
+        "project": "core-api"
+      }
+    },
+    {
+      "instance_id": "i-full-034",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 40.11,
+      "avg_mem_utilization": 79.6,
+      "p99_cpu_utilization": 86.34,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "payments",
+        "project": "orders"
+      }
+    },
+    {
+      "instance_id": "i-full-035",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 73.23,
+      "avg_mem_utilization": 65.78,
+      "p99_cpu_utilization": 82.49,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "core-platform",
+        "project": "search-api"
+      }
+    },
+    {
+      "instance_id": "i-full-036",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 68.56,
+      "avg_mem_utilization": 79.93,
+      "p99_cpu_utilization": 89.48,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "identity"
+      }
+    },
+    {
+      "instance_id": "i-full-037",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 56.96,
+      "avg_mem_utilization": 64.84,
+      "p99_cpu_utilization": 90.79,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "payments",
+        "project": "billing"
+      }
+    },
+    {
+      "instance_id": "i-full-038",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 67.06,
+      "avg_mem_utilization": 51.07,
+      "p99_cpu_utilization": 80.29,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "payments",
+        "project": "ledger"
+      }
+    },
+    {
+      "instance_id": "i-full-039",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 70.18,
+      "avg_mem_utilization": 58.37,
+      "p99_cpu_utilization": 87.8,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "risk-engine"
+      }
+    },
+    {
+      "instance_id": "i-full-040",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 60.18,
+      "avg_mem_utilization": 67.12,
+      "p99_cpu_utilization": 81.36,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "core-platform",
+        "project": "reconciliation"
+      }
+    },
+    {
+      "instance_id": "i-full-041",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 39.51,
+      "avg_mem_utilization": 58.13,
+      "p99_cpu_utilization": 79.64,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "notification-core"
+      }
+    },
+    {
+      "instance_id": "i-full-042",
+      "type": "r5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 32,
+      "hourly_cost": 0.252,
+      "avg_cpu_utilization": 59.46,
+      "avg_mem_utilization": 45.08,
+      "p99_cpu_utilization": 85.51,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "session-store"
+      }
+    },
+    {
+      "instance_id": "i-full-043",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 62.16,
+      "avg_mem_utilization": 46.42,
+      "p99_cpu_utilization": 82.13,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "catalog"
+      }
+    },
+    {
+      "instance_id": "i-full-044",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 39.97,
+      "avg_mem_utilization": 72.21,
+      "p99_cpu_utilization": 79.21,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "pricing"
+      }
+    }
+  ],
+  "storage_volumes": [
+    {
+      "volume_id": "vol-full-000",
+      "size_gb": 500,
+      "type": "HDD",
+      "monthly_cost": 35.0,
+      "attached_to": null,
+      "avg_iops": 0.0,
+      "last_access_days_ago": 47,
+      "snapshots": [
+        {
+          "id": "snap-full-0000",
+          "age_days": 182,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0001",
+          "age_days": 109,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0002",
+          "age_days": 398,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0003",
+          "age_days": 315,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0004",
+          "age_days": 405,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0005",
+          "age_days": 165,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0006",
+          "age_days": 167,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0007",
+          "age_days": 380,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0008",
+          "age_days": 308,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0009",
+          "age_days": 363,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0010",
+          "age_days": 12,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0011",
+          "age_days": 18,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0012",
+          "age_days": 18,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0013",
+          "age_days": 36,
+          "size_gb": 200.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-001",
+      "size_gb": 250,
+      "type": "SSD",
+      "monthly_cost": 30.0,
+      "attached_to": null,
+      "avg_iops": 0.0,
+      "last_access_days_ago": 99,
+      "snapshots": [
+        {
+          "id": "snap-full-0014",
+          "age_days": 99,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0015",
+          "age_days": 368,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0016",
+          "age_days": 229,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0017",
+          "age_days": 153,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0018",
+          "age_days": 405,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0019",
+          "age_days": 180,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0020",
+          "age_days": 138,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0021",
+          "age_days": 155,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0022",
+          "age_days": 157,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0023",
+          "age_days": 273,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0024",
+          "age_days": 59,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0025",
+          "age_days": 20,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0026",
+          "age_days": 40,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0027",
+          "age_days": 14,
+          "size_gb": 10.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-002",
+      "size_gb": 120,
+      "type": "SSD",
+      "monthly_cost": 14.4,
+      "attached_to": null,
+      "avg_iops": 0.0,
+      "last_access_days_ago": 159,
+      "snapshots": [
+        {
+          "id": "snap-full-0028",
+          "age_days": 305,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0029",
+          "age_days": 394,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0030",
+          "age_days": 295,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0031",
+          "age_days": 360,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0032",
+          "age_days": 102,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0033",
+          "age_days": 124,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0034",
+          "age_days": 187,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0035",
+          "age_days": 99,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0036",
+          "age_days": 356,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0037",
+          "age_days": 366,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0038",
+          "age_days": 25,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0039",
+          "age_days": 10,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0040",
+          "age_days": 42,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0041",
+          "age_days": 53,
+          "size_gb": 20.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-003",
+      "size_gb": 250,
+      "type": "HDD",
+      "monthly_cost": 17.5,
+      "attached_to": null,
+      "avg_iops": 0.0,
+      "last_access_days_ago": 87,
+      "snapshots": [
+        {
+          "id": "snap-full-0042",
+          "age_days": 390,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0043",
+          "age_days": 285,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0044",
+          "age_days": 266,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0045",
+          "age_days": 417,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0046",
+          "age_days": 282,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0047",
+          "age_days": 308,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0048",
+          "age_days": 216,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0049",
+          "age_days": 392,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0050",
+          "age_days": 378,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0051",
+          "age_days": 403,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0052",
+          "age_days": 53,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0053",
+          "age_days": 16,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0054",
+          "age_days": 8,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0055",
+          "age_days": 52,
+          "size_gb": 200.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-004",
+      "size_gb": 250,
+      "type": "SSD",
+      "monthly_cost": 30.0,
+      "attached_to": null,
+      "avg_iops": 0.0,
+      "last_access_days_ago": 63,
+      "snapshots": [
+        {
+          "id": "snap-full-0056",
+          "age_days": 321,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0057",
+          "age_days": 144,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0058",
+          "age_days": 269,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0059",
+          "age_days": 97,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0060",
+          "age_days": 276,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0061",
+          "age_days": 215,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0062",
+          "age_days": 253,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0063",
+          "age_days": 162,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0064",
+          "age_days": 281,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0065",
+          "age_days": 103,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0066",
+          "age_days": 46,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0067",
+          "age_days": 49,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0068",
+          "age_days": 51,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0069",
+          "age_days": 36,
+          "size_gb": 20.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-005",
+      "size_gb": 180,
+      "type": "SSD",
+      "monthly_cost": 21.6,
+      "attached_to": "i-full-025",
+      "avg_iops": 2743.33,
+      "last_access_days_ago": 8,
+      "snapshots": [
+        {
+          "id": "snap-full-0070",
+          "age_days": 262,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0071",
+          "age_days": 189,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0072",
+          "age_days": 405,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0073",
+          "age_days": 228,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0074",
+          "age_days": 222,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0075",
+          "age_days": 339,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0076",
+          "age_days": 128,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0077",
+          "age_days": 391,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0078",
+          "age_days": 391,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0079",
+          "age_days": 174,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0080",
+          "age_days": 16,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0081",
+          "age_days": 31,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0082",
+          "age_days": 26,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0083",
+          "age_days": 28,
+          "size_gb": 40.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-006",
+      "size_gb": 500,
+      "type": "HDD",
+      "monthly_cost": 35.0,
+      "attached_to": "i-full-026",
+      "avg_iops": 2251.92,
+      "last_access_days_ago": 6,
+      "snapshots": [
+        {
+          "id": "snap-full-0084",
+          "age_days": 210,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0085",
+          "age_days": 239,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0086",
+          "age_days": 105,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0087",
+          "age_days": 363,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0088",
+          "age_days": 281,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0089",
+          "age_days": 388,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0090",
+          "age_days": 310,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0091",
+          "age_days": 305,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0092",
+          "age_days": 105,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0093",
+          "age_days": 410,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0094",
+          "age_days": 25,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0095",
+          "age_days": 36,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0096",
+          "age_days": 28,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0097",
+          "age_days": 11,
+          "size_gb": 10.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-007",
+      "size_gb": 180,
+      "type": "SSD",
+      "monthly_cost": 21.6,
+      "attached_to": "i-full-027",
+      "avg_iops": 354.89,
+      "last_access_days_ago": 3,
+      "snapshots": [
+        {
+          "id": "snap-full-0098",
+          "age_days": 273,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0099",
+          "age_days": 134,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0100",
+          "age_days": 176,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0101",
+          "age_days": 303,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0102",
+          "age_days": 271,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0103",
+          "age_days": 317,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0104",
+          "age_days": 130,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0105",
+          "age_days": 160,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0106",
+          "age_days": 406,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0107",
+          "age_days": 376,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0108",
+          "age_days": 24,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0109",
+          "age_days": 31,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0110",
+          "age_days": 54,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0111",
+          "age_days": 18,
+          "size_gb": 120.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-008",
+      "size_gb": 500,
+      "type": "SSD",
+      "monthly_cost": 60.0,
+      "attached_to": "i-full-028",
+      "avg_iops": 2992.68,
+      "last_access_days_ago": 1,
+      "snapshots": [
+        {
+          "id": "snap-full-0112",
+          "age_days": 388,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0113",
+          "age_days": 139,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0114",
+          "age_days": 339,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0115",
+          "age_days": 293,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0116",
+          "age_days": 270,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0117",
+          "age_days": 254,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0118",
+          "age_days": 209,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0119",
+          "age_days": 151,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0120",
+          "age_days": 380,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0121",
+          "age_days": 365,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0122",
+          "age_days": 35,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0123",
+          "age_days": 22,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0124",
+          "age_days": 40,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0125",
+          "age_days": 42,
+          "size_gb": 40.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-009",
+      "size_gb": 500,
+      "type": "HDD",
+      "monthly_cost": 35.0,
+      "attached_to": "i-full-029",
+      "avg_iops": 1286.17,
+      "last_access_days_ago": 1,
+      "snapshots": [
+        {
+          "id": "snap-full-0126",
+          "age_days": 418,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0127",
+          "age_days": 214,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0128",
+          "age_days": 303,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0129",
+          "age_days": 158,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0130",
+          "age_days": 97,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0131",
+          "age_days": 259,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0132",
+          "age_days": 324,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0133",
+          "age_days": 304,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0134",
+          "age_days": 342,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0135",
+          "age_days": 375,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0136",
+          "age_days": 10,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0137",
+          "age_days": 15,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0138",
+          "age_days": 38,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0139",
+          "age_days": 57,
+          "size_gb": 20.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-010",
+      "size_gb": 180,
+      "type": "SSD",
+      "monthly_cost": 21.6,
+      "attached_to": "i-full-030",
+      "avg_iops": 1656.99,
+      "last_access_days_ago": 0,
+      "snapshots": [
+        {
+          "id": "snap-full-0140",
+          "age_days": 295,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0141",
+          "age_days": 231,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0142",
+          "age_days": 123,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0143",
+          "age_days": 210,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0144",
+          "age_days": 140,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0145",
+          "age_days": 166,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0146",
+          "age_days": 291,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0147",
+          "age_days": 182,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0148",
+          "age_days": 197,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0149",
+          "age_days": 255,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0150",
+          "age_days": 27,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0151",
+          "age_days": 11,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0152",
+          "age_days": 41,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0153",
+          "age_days": 54,
+          "size_gb": 40.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-011",
+      "size_gb": 120,
+      "type": "SSD",
+      "monthly_cost": 14.4,
+      "attached_to": "i-full-031",
+      "avg_iops": 537.09,
+      "last_access_days_ago": 2,
+      "snapshots": [
+        {
+          "id": "snap-full-0154",
+          "age_days": 322,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0155",
+          "age_days": 175,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0156",
+          "age_days": 256,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0157",
+          "age_days": 315,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0158",
+          "age_days": 244,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0159",
+          "age_days": 114,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0160",
+          "age_days": 151,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0161",
+          "age_days": 294,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0162",
+          "age_days": 409,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0163",
+          "age_days": 349,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0164",
+          "age_days": 23,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0165",
+          "age_days": 37,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0166",
+          "age_days": 16,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0167",
+          "age_days": 40,
+          "size_gb": 80.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-012",
+      "size_gb": 180,
+      "type": "HDD",
+      "monthly_cost": 12.6,
+      "attached_to": "i-full-032",
+      "avg_iops": 2405.04,
+      "last_access_days_ago": 1,
+      "snapshots": [
+        {
+          "id": "snap-full-0168",
+          "age_days": 196,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0169",
+          "age_days": 359,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0170",
+          "age_days": 316,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0171",
+          "age_days": 181,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0172",
+          "age_days": 354,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0173",
+          "age_days": 367,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0174",
+          "age_days": 221,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0175",
+          "age_days": 205,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0176",
+          "age_days": 136,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0177",
+          "age_days": 218,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0178",
+          "age_days": 11,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0179",
+          "age_days": 19,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0180",
+          "age_days": 9,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0181",
+          "age_days": 49,
+          "size_gb": 80.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-013",
+      "size_gb": 120,
+      "type": "SSD",
+      "monthly_cost": 14.4,
+      "attached_to": "i-full-033",
+      "avg_iops": 2542.11,
+      "last_access_days_ago": 1,
+      "snapshots": [
+        {
+          "id": "snap-full-0182",
+          "age_days": 363,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0183",
+          "age_days": 160,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0184",
+          "age_days": 412,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0185",
+          "age_days": 272,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0186",
+          "age_days": 296,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0187",
+          "age_days": 294,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0188",
+          "age_days": 116,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0189",
+          "age_days": 293,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0190",
+          "age_days": 383,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0191",
+          "age_days": 235,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0192",
+          "age_days": 14,
+          "size_gb": 40.0
+        },
+        {
+          "id": "snap-full-0193",
+          "age_days": 31,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0194",
+          "age_days": 31,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0195",
+          "age_days": 35,
+          "size_gb": 200.0
+        }
+      ]
+    },
+    {
+      "volume_id": "vol-full-014",
+      "size_gb": 180,
+      "type": "SSD",
+      "monthly_cost": 21.6,
+      "attached_to": "i-full-034",
+      "avg_iops": 2636.43,
+      "last_access_days_ago": 0,
+      "snapshots": [
+        {
+          "id": "snap-full-0196",
+          "age_days": 218,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0197",
+          "age_days": 415,
+          "size_gb": 10.0
+        },
+        {
+          "id": "snap-full-0198",
+          "age_days": 311,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0199",
+          "age_days": 270,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0200",
+          "age_days": 214,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0201",
+          "age_days": 295,
+          "size_gb": 120.0
+        },
+        {
+          "id": "snap-full-0202",
+          "age_days": 402,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0203",
+          "age_days": 226,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0204",
+          "age_days": 232,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0205",
+          "age_days": 167,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0206",
+          "age_days": 28,
+          "size_gb": 20.0
+        },
+        {
+          "id": "snap-full-0207",
+          "age_days": 12,
+          "size_gb": 80.0
+        },
+        {
+          "id": "snap-full-0208",
+          "age_days": 43,
+          "size_gb": 200.0
+        },
+        {
+          "id": "snap-full-0209",
+          "age_days": 18,
+          "size_gb": 10.0
+        }
+      ]
+    }
+  ],
+  "databases": [
+    {
+      "db_id": "db-full-000",
+      "engine": "sqlserver",
+      "instance_type": "db.m5.2xlarge",
+      "monthly_cost": 492.48,
+      "avg_cpu": 12.61,
+      "avg_connections": 115.79,
+      "storage_used_pct": 54.17,
+      "multi_az": true,
+      "backup_retention_days": 30,
+      "depends_on": [
+        "i-full-018",
+        "i-full-028",
+        "i-full-038",
+        "i-full-030",
+        "i-full-033",
+        "i-full-036",
+        "i-full-039",
+        "i-full-042"
+      ],
+      "tags": {
+        "env": "prod",
+        "service": "full-db-0"
+      }
+    },
+    {
+      "db_id": "db-full-001",
+      "engine": "postgres",
+      "instance_type": "db.m5.2xlarge",
+      "monthly_cost": 492.48,
+      "avg_cpu": 21.86,
+      "avg_connections": 123.37,
+      "storage_used_pct": 41.36,
+      "multi_az": true,
+      "backup_retention_days": 30,
+      "depends_on": [
+        "i-full-031",
+        "i-full-034",
+        "i-full-037",
+        "i-full-040",
+        "i-full-043"
+      ],
+      "tags": {
+        "env": "prod",
+        "service": "full-db-1"
+      }
+    },
+    {
+      "db_id": "db-full-002",
+      "engine": "mysql",
+      "instance_type": "db.m5.2xlarge",
+      "monthly_cost": 492.48,
+      "avg_cpu": 16.68,
+      "avg_connections": 196.31,
+      "storage_used_pct": 51.25,
+      "multi_az": false,
+      "backup_retention_days": 14,
+      "depends_on": [
+        "i-full-020",
+        "i-full-030",
+        "i-full-040",
+        "i-full-032",
+        "i-full-035",
+        "i-full-038",
+        "i-full-041",
+        "i-full-044"
+      ],
+      "tags": {
+        "env": "staging",
+        "service": "full-db-2"
+      }
+    },
+    {
+      "db_id": "db-full-003",
+      "engine": "postgres",
+      "instance_type": "db.m5.xlarge",
+      "monthly_cost": 246.24,
+      "avg_cpu": 4.12,
+      "avg_connections": 1.12,
+      "storage_used_pct": 67.67,
+      "multi_az": false,
+      "backup_retention_days": 7,
+      "depends_on": [],
+      "tags": {
+        "env": "staging",
+        "service": "full-db-3"
+      }
+    },
+    {
+      "db_id": "db-full-004",
+      "engine": "mysql",
+      "instance_type": "db.m5.xlarge",
+      "monthly_cost": 246.24,
+      "avg_cpu": 2.59,
+      "avg_connections": 4.01,
+      "storage_used_pct": 69.8,
+      "multi_az": false,
+      "backup_retention_days": 14,
+      "depends_on": [
+        "i-full-022",
+        "i-full-032",
+        "i-full-042"
+      ],
+      "tags": {
+        "env": "staging",
+        "service": "full-db-4"
+      }
+    },
+    {
+      "db_id": "db-full-005",
+      "engine": "postgres",
+      "instance_type": "db.r5.xlarge",
+      "monthly_cost": 336.96,
+      "avg_cpu": 63.12,
+      "avg_connections": 315.48,
+      "storage_used_pct": 28.17,
+      "multi_az": true,
+      "backup_retention_days": 30,
+      "depends_on": [],
+      "tags": {
+        "env": "prod",
+        "service": "full-db-5"
+      }
+    },
+    {
+      "db_id": "db-full-006",
+      "engine": "sqlserver",
+      "instance_type": "db.m5.large",
+      "monthly_cost": 123.12,
+      "avg_cpu": 63.77,
+      "avg_connections": 121.11,
+      "storage_used_pct": 83.76,
+      "multi_az": true,
+      "backup_retention_days": 30,
+      "depends_on": [
+        "i-full-024",
+        "i-full-034"
+      ],
+      "tags": {
+        "env": "prod",
+        "service": "full-db-6"
+      }
+    },
+    {
+      "db_id": "db-full-007",
+      "engine": "mysql",
+      "instance_type": "db.r5.large",
+      "monthly_cost": 168.48,
+      "avg_cpu": 55.7,
+      "avg_connections": 125.25,
+      "storage_used_pct": 27.39,
+      "multi_az": true,
+      "backup_retention_days": 30,
+      "depends_on": [],
+      "tags": {
+        "env": "prod",
+        "service": "full-db-7"
+      }
+    },
+    {
+      "db_id": "db-full-008",
+      "engine": "sqlserver",
+      "instance_type": "db.r5.xlarge",
+      "monthly_cost": 336.96,
+      "avg_cpu": 62.89,
+      "avg_connections": 198.24,
+      "storage_used_pct": 72.32,
+      "multi_az": false,
+      "backup_retention_days": 14,
+      "depends_on": [
+        "i-full-026",
+        "i-full-036"
+      ],
+      "tags": {
+        "env": "staging",
+        "service": "full-db-8"
+      }
+    },
+    {
+      "db_id": "db-full-009",
+      "engine": "sqlserver",
+      "instance_type": "db.r5.large",
+      "monthly_cost": 168.48,
+      "avg_cpu": 48.95,
+      "avg_connections": 65.22,
+      "storage_used_pct": 65.49,
+      "multi_az": true,
+      "backup_retention_days": 7,
+      "depends_on": [],
+      "tags": {
+        "env": "prod",
+        "service": "full-db-9"
+      }
+    }
+  ],
+  "load_balancers": [
+    {
+      "lb_id": "lb-full-000",
+      "type": "internal",
+      "monthly_cost": 25.89,
+      "avg_requests_per_sec": 0.0,
+      "attached_targets": 0,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-full-000-00",
+          "attached": false,
+          "monthly_cost": 3.6
+        },
+        {
+          "ip_id": "eip-full-000-01",
+          "attached": false,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-full-001",
+      "type": "internal",
+      "monthly_cost": 21.52,
+      "avg_requests_per_sec": 0.0,
+      "attached_targets": 0,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-full-001-00",
+          "attached": false,
+          "monthly_cost": 3.6
+        },
+        {
+          "ip_id": "eip-full-001-01",
+          "attached": false,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-full-002",
+      "type": "internal",
+      "monthly_cost": 18.03,
+      "avg_requests_per_sec": 0.0,
+      "attached_targets": 0,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-full-002-00",
+          "attached": false,
+          "monthly_cost": 3.6
+        },
+        {
+          "ip_id": "eip-full-002-01",
+          "attached": false,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-full-003",
+      "type": "public",
+      "monthly_cost": 22.94,
+      "avg_requests_per_sec": 214.61,
+      "attached_targets": 3,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-full-003-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-full-004",
+      "type": "public",
+      "monthly_cost": 30.91,
+      "avg_requests_per_sec": 479.4,
+      "attached_targets": 6,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-full-004-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-full-005",
+      "type": "public",
+      "monthly_cost": 21.14,
+      "avg_requests_per_sec": 466.07,
+      "attached_targets": 5,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-full-005-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        },
+        {
+          "ip_id": "eip-full-005-01",
+          "attached": false,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-full-006",
+      "type": "public",
+      "monthly_cost": 14.67,
+      "avg_requests_per_sec": 285.71,
+      "attached_targets": 7,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-full-006-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-full-007",
+      "type": "public",
+      "monthly_cost": 34.79,
+      "avg_requests_per_sec": 434.41,
+      "attached_targets": 7,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-full-007-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-full-008",
+      "type": "public",
+      "monthly_cost": 26.73,
+      "avg_requests_per_sec": 453.92,
+      "attached_targets": 8,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-full-008-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        },
+        {
+          "ip_id": "eip-full-008-01",
+          "attached": false,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-full-009",
+      "type": "public",
+      "monthly_cost": 31.8,
+      "avg_requests_per_sec": 548.7,
+      "attached_targets": 3,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-full-009-00",
+          "attached": true,
+          "monthly_cost": 3.6
+        }
+      ]
+    }
+  ],
+  "sla_requirements": {
+    "checkout": 99.95,
+    "payments-api": 99.95,
+    "gateway": 99.95,
+    "core-api": 99.95,
+    "orders": 99.95,
+    "search-api": 99.9,
+    "identity": 99.9,
+    "billing": 99.9,
+    "ledger": 99.9,
+    "risk-engine": 99.9,
+    "reconciliation": 99.9,
+    "notification-core": 99.9,
+    "session-store": 99.9,
+    "catalog": 99.9,
+    "pricing": 99.9
+  },
+  "dependencies": {
+    "i-full-018": [
+      "db-full-000"
+    ],
+    "i-full-019": [
+      "db-full-001"
+    ],
+    "i-full-020": [
+      "db-full-002"
+    ],
+    "i-full-021": [
+      "db-full-003"
+    ],
+    "i-full-022": [
+      "db-full-004"
+    ],
+    "i-full-023": [
+      "db-full-005"
+    ],
+    "i-full-024": [
+      "db-full-006"
+    ],
+    "i-full-025": [
+      "db-full-007"
+    ],
+    "i-full-026": [
+      "db-full-008"
+    ],
+    "i-full-027": [
+      "db-full-009"
+    ],
+    "i-full-028": [
+      "db-full-000"
+    ],
+    "i-full-029": [
+      "db-full-001"
+    ],
+    "i-full-030": [
+      "db-full-002",
+      "db-full-000"
+    ],
+    "i-full-031": [
+      "db-full-003",
+      "db-full-001"
+    ],
+    "i-full-032": [
+      "db-full-004",
+      "db-full-002"
+    ],
+    "i-full-033": [
+      "db-full-005",
+      "db-full-000"
+    ],
+    "i-full-034": [
+      "db-full-006",
+      "db-full-001"
+    ],
+    "i-full-035": [
+      "db-full-007",
+      "db-full-002"
+    ],
+    "i-full-036": [
+      "db-full-008",
+      "db-full-000"
+    ],
+    "i-full-037": [
+      "db-full-009",
+      "db-full-001"
+    ],
+    "i-full-038": [
+      "db-full-000",
+      "db-full-002"
+    ],
+    "i-full-039": [
+      "db-full-001",
+      "db-full-000"
+    ],
+    "i-full-040": [
+      "db-full-002",
+      "db-full-001"
+    ],
+    "i-full-041": [
+      "db-full-003",
+      "db-full-002"
+    ],
+    "i-full-042": [
+      "db-full-004",
+      "db-full-000"
+    ],
+    "i-full-043": [
+      "db-full-001"
+    ],
+    "i-full-044": [
+      "db-full-002"
+    ]
+  },
+  "current_monthly_spend": 15973.44,
+  "target_spend": 9584.06
+}

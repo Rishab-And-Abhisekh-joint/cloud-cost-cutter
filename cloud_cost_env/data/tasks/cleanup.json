@@ -1,0 +1,493 @@
+{
+  "compute_instances": [
+    {
+      "instance_id": "i-clean-000",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 0.26,
+      "avg_mem_utilization": 4.93,
+      "p99_cpu_utilization": 8.68,
+      "last_connection_days_ago": 48,
+      "state": "stopped",
+      "tags": {
+        "env": "dev",
+        "team": "platform",
+        "project": "archived-migration"
+      }
+    },
+    {
+      "instance_id": "i-clean-001",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 0.27,
+      "avg_mem_utilization": 4.53,
+      "p99_cpu_utilization": 12.06,
+      "last_connection_days_ago": 38,
+      "state": "stopped",
+      "tags": {
+        "env": "dev",
+        "team": "platform",
+        "project": "archived-migration"
+      }
+    },
+    {
+      "instance_id": "i-clean-002",
+      "type": "m5.2xlarge",
+      "vcpus": 8,
+      "ram_gb": 32,
+      "hourly_cost": 0.384,
+      "avg_cpu_utilization": 1.23,
+      "avg_mem_utilization": 4.95,
+      "p99_cpu_utilization": 16.43,
+      "last_connection_days_ago": 55,
+      "state": "stopped",
+      "tags": {
+        "env": "staging",
+        "team": "platform",
+        "project": "archived-migration"
+      }
+    },
+    {
+      "instance_id": "i-clean-003",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 38.53,
+      "avg_mem_utilization": 78.07,
+      "p99_cpu_utilization": 78.75,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "payments",
+        "project": "core-api"
+      }
+    },
+    {
+      "instance_id": "i-clean-004",
+      "type": "c5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 8,
+      "hourly_cost": 0.17,
+      "avg_cpu_utilization": 36.06,
+      "avg_mem_utilization": 73.14,
+      "p99_cpu_utilization": 85.7,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "payments",
+        "project": "core-api"
+      }
+    },
+    {
+      "instance_id": "i-clean-005",
+      "type": "c5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 8,
+      "hourly_cost": 0.17,
+      "avg_cpu_utilization": 54.52,
+      "avg_mem_utilization": 78.79,
+      "p99_cpu_utilization": 79.84,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "platform",
+        "project": "core-api"
+      }
+    },
+    {
+      "instance_id": "i-clean-006",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 56.25,
+      "avg_mem_utilization": 66.71,
+      "p99_cpu_utilization": 71.19,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "search",
+        "project": "core-api"
+      }
+    },
+    {
+      "instance_id": "i-clean-007",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 73.38,
+      "avg_mem_utilization": 73.49,
+      "p99_cpu_utilization": 92.53,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "data",
+        "project": "core-api"
+      }
+    },
+    {
+      "instance_id": "i-clean-008",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 51.04,
+      "avg_mem_utilization": 72.53,
+      "p99_cpu_utilization": 74.23,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "platform",
+        "project": "core-api"
+      }
+    },
+    {
+      "instance_id": "i-clean-009",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 60.15,
+      "avg_mem_utilization": 66.58,
+      "p99_cpu_utilization": 87.77,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "prod",
+        "team": "payments",
+        "project": "core-api"
+      }
+    },
+    {
+      "instance_id": "i-clean-010",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 38.86,
+      "avg_mem_utilization": 52.08,
+      "p99_cpu_utilization": 95.73,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "search",
+        "project": "batch"
+      }
+    },
+    {
+      "instance_id": "i-clean-011",
+      "type": "t3.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.0832,
+      "avg_cpu_utilization": 41.62,
+      "avg_mem_utilization": 36.44,
+      "p99_cpu_utilization": 78.2,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "platform",
+        "project": "etl"
+      }
+    },
+    {
+      "instance_id": "i-clean-012",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 40.93,
+      "avg_mem_utilization": 57.47,
+      "p99_cpu_utilization": 93.0,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "data",
+        "project": "etl"
+      }
+    },
+    {
+      "instance_id": "i-clean-013",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 42.36,
+      "avg_mem_utilization": 60.26,
+      "p99_cpu_utilization": 76.83,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "data",
+        "project": "batch"
+      }
+    },
+    {
+      "instance_id": "i-clean-014",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 41.21,
+      "avg_mem_utilization": 79.89,
+      "p99_cpu_utilization": 83.25,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "payments",
+        "project": "etl"
+      }
+    },
+    {
+      "instance_id": "i-clean-015",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 58.35,
+      "avg_mem_utilization": 70.64,
+      "p99_cpu_utilization": 80.98,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "payments",
+        "project": "analytics"
+      }
+    },
+    {
+      "instance_id": "i-clean-016",
+      "type": "c5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 8,
+      "hourly_cost": 0.17,
+      "avg_cpu_utilization": 54.22,
+      "avg_mem_utilization": 78.7,
+      "p99_cpu_utilization": 92.38,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "payments",
+        "project": "batch"
+      }
+    },
+    {
+      "instance_id": "i-clean-017",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 64.28,
+      "avg_mem_utilization": 50.31,
+      "p99_cpu_utilization": 77.63,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "search",
+        "project": "analytics"
+      }
+    },
+    {
+      "instance_id": "i-clean-018",
+      "type": "m5.xlarge",
+      "vcpus": 4,
+      "ram_gb": 16,
+      "hourly_cost": 0.192,
+      "avg_cpu_utilization": 72.82,
+      "avg_mem_utilization": 69.29,
+      "p99_cpu_utilization": 83.2,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "staging",
+        "team": "payments",
+        "project": "batch"
+      }
+    },
+    {
+      "instance_id": "i-clean-019",
+      "type": "m5.large",
+      "vcpus": 2,
+      "ram_gb": 8,
+      "hourly_cost": 0.096,
+      "avg_cpu_utilization": 38.42,
+      "avg_mem_utilization": 69.31,
+      "p99_cpu_utilization": 84.02,
+      "last_connection_days_ago": 0,
+      "state": "running",
+      "tags": {
+        "env": "dev",
+        "team": "payments",
+        "project": "batch"
+      }
+    }
+  ],
+  "storage_volumes": [
+    {
+      "volume_id": "vol-clean-000",
+      "size_gb": 220,
+      "type": "SSD",
+      "monthly_cost": 26.4,
+      "attached_to": null,
+      "avg_iops": 0.0,
+      "last_access_days_ago": 91,
+      "snapshots": []
+    },
+    {
+      "volume_id": "vol-clean-001",
+      "size_gb": 160,
+      "type": "HDD",
+      "monthly_cost": 11.2,
+      "attached_to": null,
+      "avg_iops": 0.0,
+      "last_access_days_ago": 112,
+      "snapshots": []
+    },
+    {
+      "volume_id": "vol-clean-002",
+      "size_gb": 120,
+      "type": "SSD",
+      "monthly_cost": 14.4,
+      "attached_to": "i-clean-005",
+      "avg_iops": 148.83,
+      "last_access_days_ago": 2,
+      "snapshots": []
+    },
+    {
+      "volume_id": "vol-clean-003",
+      "size_gb": 80,
+      "type": "HDD",
+      "monthly_cost": 5.6,
+      "attached_to": "i-clean-006",
+      "avg_iops": 1420.51,
+      "last_access_days_ago": 2,
+      "snapshots": []
+    },
+    {
+      "volume_id": "vol-clean-004",
+      "size_gb": 60,
+      "type": "SSD",
+      "monthly_cost": 7.2,
+      "attached_to": "i-clean-007",
+      "avg_iops": 474.39,
+      "last_access_days_ago": 1,
+      "snapshots": [
+        {
+          "id": "snap-clean-000",
+          "age_days": 18,
+          "size_gb": 25.0
+        }
+      ]
+    }
+  ],
+  "databases": [
+    {
+      "db_id": "db-clean-000",
+      "engine": "postgres",
+      "instance_type": "db.m5.large",
+      "monthly_cost": 123.12,
+      "avg_cpu": 33.0,
+      "avg_connections": 137.2,
+      "storage_used_pct": 42.57,
+      "multi_az": true,
+      "backup_retention_days": 30,
+      "depends_on": [],
+      "tags": {
+        "env": "prod",
+        "service": "svc-clean-0"
+      }
+    },
+    {
+      "db_id": "db-clean-001",
+      "engine": "postgres",
+      "instance_type": "db.m5.large",
+      "monthly_cost": 123.12,
+      "avg_cpu": 64.23,
+      "avg_connections": 146.54,
+      "storage_used_pct": 47.25,
+      "multi_az": true,
+      "backup_retention_days": 14,
+      "depends_on": [],
+      "tags": {
+        "env": "prod",
+        "service": "svc-clean-1"
+      }
+    },
+    {
+      "db_id": "db-clean-002",
+      "engine": "mysql",
+      "instance_type": "db.m5.large",
+      "monthly_cost": 123.12,
+      "avg_cpu": 34.49,
+      "avg_connections": 135.06,
+      "storage_used_pct": 40.24,
+      "multi_az": false,
+      "backup_retention_days": 14,
+      "depends_on": [],
+      "tags": {
+        "env": "staging",
+        "service": "svc-clean-2"
+      }
+    }
+  ],
+  "load_balancers": [
+    {
+      "lb_id": "lb-clean-000",
+      "type": "public",
+      "monthly_cost": 27.15,
+      "avg_requests_per_sec": 64.91,
+      "attached_targets": 6,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-clean-000",
+          "attached": true,
+          "monthly_cost": 3.6
+        }
+      ]
+    },
+    {
+      "lb_id": "lb-clean-001",
+      "type": "internal",
+      "monthly_cost": 30.77,
+      "avg_requests_per_sec": 0.0,
+      "attached_targets": 0,
+      "elastic_ips": [
+        {
+          "ip_id": "eip-clean-001",
+          "attached": false,
+          "monthly_cost": 3.6
+        },
+        {
+          "ip_id": "eip-clean-002",
+          "attached": false,
+          "monthly_cost": 3.6
+        }
+      ]
+    }
+  ],
+  "sla_requirements": {
+    "core-api": 99.9
+  },
+  "dependencies": {},
+  "current_monthly_spend": 3210.94,
+  "target_spend": 2408.2
+}

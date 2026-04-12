@@ -1,0 +1,32 @@
+name: cloud_cost_env
+version: "1.0.0"
+description: >
+  Cloud cost optimization environment where an AI agent analyzes simulated
+  infrastructure and applies safe FinOps actions to reduce spend without
+  violating SLAs.
+author: "Rishab"
+tags:
+  - cloud-cost
+  - finops
+  - optimization
+  - infrastructure
+default_task: cleanup
+tasks:
+  - name: cleanup
+    difficulty: easy
+    max_steps: 8
+    fixture: cloud_cost_env/data/tasks/cleanup.json
+    description: "Generated at reset with seed 42 and 30 core resources (3 idle compute, 2 orphaned volumes, 2 unattached IPs, 1 empty LB)."
+  - name: rightsize
+    difficulty: medium
+    max_steps: 8
+    fixture: cloud_cost_env/data/tasks/rightsize.json
+    description: "Generated at reset with seed 123 and 50 core resources, including 12 over-provisioned targets and dependency/SLA traps."
+  - name: full_optimization
+    difficulty: hard
+    max_steps: 8
+    fixture: cloud_cost_env/data/tasks/full_optimization.json
+    description: "Generated at reset with seed 777 and 80 core resources plus 210 snapshots, 15 prod-critical compute, and complex dependencies."
+server:
+  entrypoint: "cloud_cost_env.server.app:app"
+  port: 8000

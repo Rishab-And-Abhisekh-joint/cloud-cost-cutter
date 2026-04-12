@@ -1,0 +1,208 @@
+# CloudCostEnv
+
+CloudCostEnv is an OpenEnv-style RL environment for cloud cost optimization. It simulates cloud accounts with realistic waste patterns and asks an agent to optimize safely under SLA and dependency constraints.
+
+Episodes are generated on reset from deterministic task profiles (not loaded from static fixtures at runtime):
+
+- cleanup: seed 42, 30 core resources with explicit easy-case waste pattern
+- rightsize: seed 123, 50 core resources with 12 over-provisioned targets and SLA/dependency constraints
+- full_optimization: seed 777, 80 core resources plus 210 snapshots and 15 prod-critical compute resources
+
+You can override the seed for reproducibility checks by setting RUN_SEED.
+
+The repository now includes deployment-ready assets for:
+
+- Railway backend (`Dockerfile`, `railway.json`)
+- Vercel frontend dashboard (`frontend/`)
+
+## Tasks
+
+- `cleanup` (easy): remove clearly idle/orphaned resources.
+- `rightsize` (medium): downsize over-provisioned resources while preserving SLAs.
+- `full_optimization` (hard): combine cleanup, scheduling, rightsizing, snapshot cleanup, and reservations.
+
+## Quick Start
+
+```bash
+python -m venv .venv
+. .venv/Scripts/Activate.ps1
+pip install -e .
+uvicorn cloud_cost_env.server.app:app --host 127.0.0.1 --port 8000
+```
+
+In a second terminal:
+
+```bash
+set ENV_BASE_URL=http://127.0.0.1:8000
+set RUN_SEED=42
+python -m cloud_cost_env.inference
+```
+
+Baseline helper (root wrapper):
+
+```bash
+python inference.py
+```
+
+LLM runner (separate from baseline):
+
+```bash
+set ENV_BASE_URL=http://127.0.0.1:8000
+set RUN_SEED=42
+set HF_TOKEN=your_token
+set MODEL_NAME=Qwen/Qwen2.5-72B-Instruct
+set LLM_API_BASE_URL=https://router.huggingface.co/v1
+python inference_llm.py
+```
+
+Strict reliability benchmarking mode (fail fast on malformed/invalid model actions):
+
+```bash
+set ENV_BASE_URL=http://127.0.0.1:8000
+set HF_TOKEN=your_token
+set MODEL_NAME=Qwen/Qwen2.5-72B-Instruct
+set LLM_API_BASE_URL=https://router.huggingface.co/v1
+set STRICT_ACTION_MODE=true
+python inference_llm.py
+```
+
+If credentials are not available, the LLM runner can fall back to heuristics:
+
+```bash
+set ALLOW_HEURISTIC_FALLBACK=true
+python inference_llm.py
+```
+
+## API
+
+Run the FastAPI app:
+
+```bash
+uvicorn cloud_cost_env.server.app:app --reload
+```
+
+Endpoints:
+
+- `POST /reset/{task_name}`
+- `POST /step`
+- `GET /state`
+- `GET /profile`
+- `GET /health`
+
+Profile endpoint usage:
+
+```bash
+# Active episode profile (after calling reset)
+curl http://127.0.0.1:8000/profile
+
+# Preview profile for a task/seed without mutating current state
+curl "http://127.0.0.1:8000/profile?task_name=full_optimization&seed=777"
+```
+
+## Production Deployment (Railway + Vercel)
+
+Install CLIs if needed:
+
+```bash
+npm install -g @railway/cli vercel
+```
+
+### 1) Deploy backend to Railway
+
+Railway uses the root `Dockerfile` and `railway.json` in this repo.
+
+Required Railway environment variables:
+
+- `ALLOWED_ORIGINS`: set to your Vercel URL (for example `https://cloud-cost-dashboard.vercel.app`)
+
+Optional backend environment variables:
+
+- `RUN_SEED`
+
+Deploy flow:
+
+```bash
+# from repo root
+railway init
+railway up
+```
+
+After deployment, verify health:
+
+```bash
+curl https://<your-railway-domain>/health
+```
+
+### 2) Deploy frontend to Vercel
+
+The frontend is a Vite React app under `frontend/`.
+
+Required Vercel environment variables:
+
+- `VITE_API_BASE_URL`: your Railway backend URL (for example `https://<your-railway-domain>`)
+
+Vercel settings:
+
+- Root Directory: `frontend`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+Deploy flow:
+
+```bash
+# from repo root
+cd frontend
+vercel
+```
+
+### 3) Wire CORS after Vercel URL is known
+
+Update Railway `ALLOWED_ORIGINS` to the final Vercel domain and redeploy.
+
+## .env Parameters
+
+Use [.env.example](.env.example) as your template.
+
+Required for baseline runner:
+
+- `ENV_BASE_URL`
+
+Required for LLM runner (unless fallback mode is enabled):
+
+- One credential: `HF_TOKEN` or `API_KEY` or `OPENAI_API_KEY`
+- `MODEL_NAME`
+- `LLM_API_BASE_URL`
+
+Common optional parameters:
+
+- `RUN_SEED`
+- `ALLOWED_ORIGINS`
+- `ALLOW_HEURISTIC_FALLBACK`
+- `STRICT_ACTION_MODE`
+- `MAX_STEPS`
+- `TEMPERATURE`
+- `MAX_TOKENS`
+
+Frontend parameter:
+
+- `VITE_API_BASE_URL` (set in Vercel project env vars)
+
+## Reward
+
+Per step:
+
+`reward = savings_component + efficiency_bonus - sla_penalty - destruction_penalty`
+
+Where savings are normalized by theoretical max possible savings for the episode.
+
+## Project Structure
+
+- `cloud_cost_env/models.py`: Pydantic models
+- `cloud_cost_env/data/generator.py`: deterministic account generation
+- `cloud_cost_env/server/environment.py`: reset/step logic
+- `cloud_cost_env/server/action_engine.py`: action execution
+- `cloud_cost_env/server/grader.py`: deterministic scoring
+- `cloud_cost_env/inference.py`: baseline local inference loop
+- `cloud_cost_env/inference_llm.py`: LLM-driven inference loop with robust JSON parsing
+- `Dockerfile` + `railway.json`: Railway backend deployment
+- `frontend/`: Vercel dashboard (Vite + React)
