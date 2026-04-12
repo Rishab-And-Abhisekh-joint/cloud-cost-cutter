@@ -86,6 +86,8 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+          VERCEL_GIT_AUTHOR_NAME: ${{ vars.VERCEL_GIT_AUTHOR_NAME }}
+          VERCEL_GIT_AUTHOR_EMAIL: ${{ vars.VERCEL_GIT_AUTHOR_EMAIL }}
         run: |
           export VERCEL_TOKEN="$(echo "$VERCEL_TOKEN" | tr -d '\r\n')"
           if [ -z "$VERCEL_TOKEN" ]; then
@@ -93,6 +95,14 @@ jobs:
             exit 0
           fi
 
+          AUTHOR_NAME="${VERCEL_GIT_AUTHOR_NAME:-rishabacharjee12345-8435}"
+          AUTHOR_EMAIL="${VERCEL_GIT_AUTHOR_EMAIL:-rishab.acharjee12345@gmail.com}"
+
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           vercel build --prod --token="$VERCEL_TOKEN"
-          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" \
+            -m "gitCommitAuthorName=${AUTHOR_NAME}" \
+            -m "gitCommitAuthorEmail=${AUTHOR_EMAIL}" \
+            -m "gitCommitRef=${GITHUB_REF_NAME}" \
+            -m "gitCommitSha=${GITHUB_SHA}" \
+            -m "gitCommitMessage=Deploy via GitHub Actions"
