@@ -4,3 +4,10 @@ railway.json
 .venv/**
 .env
 .env.*
+__init__.py
+client.py
+models.py
+server/**
+uv.lock
+inference_llm.py
+scripts/**
