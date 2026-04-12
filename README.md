@@ -163,7 +163,7 @@ Update Railway `ALLOWED_ORIGINS` to the final Vercel domain and redeploy.
 
 GitHub repository:
 
-- https://github.com/rishabacharjee/cloud-cost-cutter
+- https://github.com/Rishab-And-Abhisekh-joint/cloud-cost-cutter
 
 CI workflow file:
 
