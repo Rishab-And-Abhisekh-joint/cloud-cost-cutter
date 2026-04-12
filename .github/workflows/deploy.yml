@@ -5,6 +5,9 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+env:
+  ENABLE_RAILWAY_DEPLOY: "false"
+
 jobs:
   deploy-backend:
     name: Deploy Backend (Railway)
@@ -22,7 +25,12 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
+      - name: Deployment Disabled Notice
+        if: env.ENABLE_RAILWAY_DEPLOY != 'true'
+        run: echo "Railway deployment is disabled. Set ENABLE_RAILWAY_DEPLOY to true to enable."
+
       - name: Deploy Backend
+        if: env.ENABLE_RAILWAY_DEPLOY == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: >-

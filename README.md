@@ -183,7 +183,11 @@ Configured GitHub Actions variables:
 
 Configured GitHub Actions secrets:
 
-- `RAILWAY_TOKEN`
+- `RAILWAY_TOKEN` (must be a Railway deploy/API token, not a local session token)
+
+Workflow toggle:
+
+- In `.github/workflows/deploy.yml`, set `ENABLE_RAILWAY_DEPLOY` to `"true"` only after adding a valid Railway deploy/API token.
 
 Required to enable frontend auto-deploy in CI:
 
