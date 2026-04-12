@@ -223,7 +223,8 @@ TESTER_HTML = """<!doctype html>
       <p class=\"hint\">
         Modes: <strong>preview</strong>, <strong>dry</strong>, <strong>apply</strong>, <strong>step</strong>.<br/>
         JSON example: {\"task\":\"cleanup\",\"seed\":42,\"mode\":\"dry\"}<br/>
-        Key-value example: task=rightsize seed=123 mode=step command=skip
+        Key-value example: task=rightsize seed=123 mode=step command=skip<br/>
+        Press <strong>Enter</strong> to run. Use <strong>Shift+Enter</strong> for a new line.
       </p>
       <div class=\"actions\">
         <button class=\"primary\" id=\"runBtn\">Run</button>
@@ -312,7 +313,7 @@ TESTER_HTML = """<!doctype html>
       if (value === "false") {
         return false;
       }
-      if (/^-?\\d+$/.test(value)) {
+      if (/^-?\d+$/.test(value)) {
         return Number(value);
       }
       if ((value.startsWith("{") && value.endsWith("}")) || (value.startsWith("[") && value.endsWith("]"))) {
@@ -327,10 +328,10 @@ TESTER_HTML = """<!doctype html>
 
     function parseKeyValueInput(raw) {
       const parsed = {};
-      const regex = /([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*([^\\n,]+)/g;
+      const regex = /([a-zA-Z_][a-zA-Z0-9_]*)\s*(=|:)\s*([^\n,]+)/g;
       let match;
       while ((match = regex.exec(raw)) !== null) {
-        parsed[match[1]] = normalizeValue(match[2]);
+        parsed[match[1]] = normalizeValue(match[3]);
       }
       return parsed;
     }
@@ -342,7 +343,16 @@ TESTER_HTML = """<!doctype html>
         mode: "preview"
       };
 
-      const text = String(raw || "").trim();
+      const textRaw = String(raw || "").trim();
+      let text = textRaw;
+
+      if (
+        (text.startsWith("'") && text.endsWith("'")) ||
+        (text.startsWith("\"") && text.endsWith("\""))
+      ) {
+        text = text.slice(1, -1).trim();
+      }
+
       if (!text) {
         return fallback;
       }
@@ -360,6 +370,10 @@ TESTER_HTML = """<!doctype html>
       const merged = { ...fallback, ...(data || {}) };
       merged.task = String(merged.task || fallback.task).trim() || fallback.task;
       merged.mode = String(merged.mode || fallback.mode).toLowerCase().trim() || fallback.mode;
+
+      if (!["preview", "dry", "apply", "step"].includes(merged.mode)) {
+        merged.mode = "preview";
+      }
 
       const seedValue = Number(merged.seed);
       merged.seed = Number.isFinite(seedValue) ? seedValue : fallback.seed;
@@ -513,6 +527,7 @@ TESTER_HTML = """<!doctype html>
         setStatus("Done. Output generated from seeded data.", "ok");
       } catch (err) {
         setStatus(`Run failed: ${err.message}`, "bad");
+        renderJson({ error: String(err.message || err), input: config || null });
       } finally {
         setBusy(false);
       }
@@ -522,6 +537,13 @@ TESTER_HTML = """<!doctype html>
     byId("previewExampleBtn").onclick = () => { inputEl.value = PREVIEW_EXAMPLE; };
     byId("dryExampleBtn").onclick = () => { inputEl.value = DRY_EXAMPLE; };
     byId("stepExampleBtn").onclick = () => { inputEl.value = STEP_EXAMPLE; };
+
+    inputEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        runScenario();
+      }
+    });
 
     (async () => {
       try {
