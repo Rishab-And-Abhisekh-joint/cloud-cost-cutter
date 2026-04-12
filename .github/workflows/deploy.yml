@@ -35,7 +35,6 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           export RAILWAY_TOKEN="$(echo "$RAILWAY_TOKEN" | tr -d '\r\n')"
-          railway whoami
           railway up --ci \
             --project "${{ vars.RAILWAY_PROJECT_ID }}" \
             --environment "production" \
