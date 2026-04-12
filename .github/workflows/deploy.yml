@@ -28,4 +28,5 @@ jobs:
         run: >-
           railway up --ci
           --project "${{ vars.RAILWAY_PROJECT_ID }}"
+          --environment "production"
           --service "${{ vars.RAILWAY_SERVICE_NAME }}"
