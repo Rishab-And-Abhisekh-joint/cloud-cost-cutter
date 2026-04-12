@@ -172,22 +172,22 @@ CI workflow file:
 What it does on every push to `main`:
 
 - Deploy backend to Railway using `railway up --ci`
+- Run a backend smoke test against `/health` and fail the workflow if it does not return `{"status":"ok"}`
 
 Configured GitHub Actions variables:
 
 - `RAILWAY_PROJECT_ID`
 - `RAILWAY_SERVICE_NAME`
-- `BACKEND_PUBLIC_URL`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
 
 Configured GitHub Actions secrets:
 
-- `RAILWAY_TOKEN` (must be a Railway deploy/API token, not a local session token)
+- `RAILWAY_TOKEN` (use a Railway project token for this project/environment)
 
 Workflow toggle:
 
-- In `.github/workflows/deploy.yml`, set `ENABLE_RAILWAY_DEPLOY` to `"true"` only after adding a valid Railway deploy/API token.
+- In `.github/workflows/deploy.yml`, set `ENABLE_RAILWAY_DEPLOY` to `"true"` only after adding a valid Railway project token.
 
 Required to enable frontend auto-deploy in CI:
 
