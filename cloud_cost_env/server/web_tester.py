@@ -328,7 +328,7 @@ TESTER_HTML = """<!doctype html>
 
     function parseKeyValueInput(raw) {
       const parsed = {};
-      const regex = /([a-zA-Z_][a-zA-Z0-9_]*)\s*(=|:)\s*([^\n,]+)/g;
+      const regex = /([a-zA-Z_][a-zA-Z0-9_]*)\s*(=|:)\s*([^\\n,]+)/g;
       let match;
       while ((match = regex.exec(raw)) !== null) {
         parsed[match[1]] = normalizeValue(match[3]);
@@ -348,7 +348,7 @@ TESTER_HTML = """<!doctype html>
 
       if (
         (text.startsWith("'") && text.endsWith("'")) ||
-        (text.startsWith("\"") && text.endsWith("\""))
+        (text.startsWith('"') && text.endsWith('"'))
       ) {
         text = text.slice(1, -1).trim();
       }
