@@ -159,6 +159,37 @@ vercel
 
 Update Railway `ALLOWED_ORIGINS` to the final Vercel domain and redeploy.
 
+## GitHub + CI/CD
+
+GitHub repository:
+
+- https://github.com/rishabacharjee/cloud-cost-cutter
+
+CI workflow file:
+
+- `.github/workflows/deploy.yml`
+
+What it does on every push to `main`:
+
+- Deploy backend to Railway using `railway up --ci`
+
+Configured GitHub Actions variables:
+
+- `RAILWAY_PROJECT_ID`
+- `RAILWAY_SERVICE_NAME`
+- `BACKEND_PUBLIC_URL`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+Configured GitHub Actions secrets:
+
+- `RAILWAY_TOKEN`
+
+Required to enable frontend auto-deploy in CI:
+
+- Add `VERCEL_TOKEN` as a repository secret (create from https://vercel.com/account/tokens)
+- Add a frontend deploy job (Vercel CLI) to `.github/workflows/deploy.yml`
+
 ## .env Parameters
 
 Use [.env.example](.env.example) as your template.
