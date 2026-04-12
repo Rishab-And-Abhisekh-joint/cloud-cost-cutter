@@ -173,6 +173,7 @@ What it does on every push to `main`:
 
 - Deploy backend to Railway using `railway up --ci`
 - Run a backend smoke test against `/health` and fail the workflow if it does not return `{"status":"ok"}`
+- Deploy frontend to Vercel when `VERCEL_TOKEN` is configured
 
 Configured GitHub Actions variables:
 
@@ -192,7 +193,6 @@ Workflow toggle:
 Required to enable frontend auto-deploy in CI:
 
 - Add `VERCEL_TOKEN` as a repository secret (create from https://vercel.com/account/tokens)
-- Add a frontend deploy job (Vercel CLI) to `.github/workflows/deploy.yml`
 
 ## .env Parameters
 

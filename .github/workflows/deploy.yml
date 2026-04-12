@@ -7,6 +7,7 @@ on:
 
 env:
   ENABLE_RAILWAY_DEPLOY: "true"
+  ENABLE_VERCEL_DEPLOY: "true"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
@@ -60,3 +61,38 @@ jobs:
 
           echo "Smoke test failed after 10 attempts."
           exit 1
+
+  deploy-frontend:
+    name: Deploy Frontend (Vercel)
+    runs-on: ubuntu-latest
+    needs: deploy-backend
+    if: vars.VERCEL_ORG_ID != '' && vars.VERCEL_PROJECT_ID != ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Build and Deploy Frontend
+        working-directory: frontend
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: |
+          export VERCEL_TOKEN="$(echo "$VERCEL_TOKEN" | tr -d '\r\n')"
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "Skipping frontend deploy because VERCEL_TOKEN is not configured."
+            exit 0
+          fi
+
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
