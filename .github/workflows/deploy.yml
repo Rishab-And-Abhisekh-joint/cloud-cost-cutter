@@ -33,8 +33,10 @@ jobs:
         if: env.ENABLE_RAILWAY_DEPLOY == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: >-
-          railway up --ci
-          --project "${{ vars.RAILWAY_PROJECT_ID }}"
-          --environment "production"
-          --service "${{ vars.RAILWAY_SERVICE_NAME }}"
+        run: |
+          export RAILWAY_TOKEN="$(echo "$RAILWAY_TOKEN" | tr -d '\r\n')"
+          railway whoami
+          railway up --ci \
+            --project "${{ vars.RAILWAY_PROJECT_ID }}" \
+            --environment "production" \
+            --service "${{ vars.RAILWAY_SERVICE_NAME }}"
