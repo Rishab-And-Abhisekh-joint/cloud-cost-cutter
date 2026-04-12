@@ -129,6 +129,8 @@ Endpoints:
 - `GET /state`
 - `GET /profile`
 - `GET /health`
+- `GET /live/dashboard`
+- `POST /live/action`
 
 Profile endpoint usage:
 
@@ -138,6 +140,23 @@ curl http://127.0.0.1:8000/profile
 
 # Preview profile for a task/seed without mutating current state
 curl "http://127.0.0.1:8000/profile?task_name=full_optimization&seed=777"
+```
+
+Live dashboard endpoint usage:
+
+```bash
+# Get actionable recommendations and recent action history
+curl "http://127.0.0.1:8000/live/dashboard?task_name=full_optimization&seed=777"
+
+# Dry run (no mutation)
+curl -X POST http://127.0.0.1:8000/live/action \
+	-H "Content-Type: application/json" \
+	-d '{"action_type":"release_eip","resource_id":"eip-123","apply":false}'
+
+# Apply action (mutates active episode)
+curl -X POST http://127.0.0.1:8000/live/action \
+	-H "Content-Type: application/json" \
+	-d '{"action_type":"release_eip","resource_id":"eip-123","apply":true}'
 ```
 
 ## Production Deployment (Railway + Vercel)
@@ -253,6 +272,9 @@ Common optional parameters:
 
 - `RUN_SEED`
 - `ALLOWED_ORIGINS`
+- `LIVE_DASHBOARD_ALLOW_APPLY` (set `false` to force dry-run only)
+- `AWS_REGION` (display label for live dashboard)
+- `AWS_ACCOUNT_ID` and `AWS_ACCOUNT_ARN` (optional display metadata)
 - `ALLOW_HEURISTIC_FALLBACK`
 - `STRICT_ACTION_MODE`
 - `MAX_STEPS`

@@ -35,6 +35,27 @@ function StatCard({ label, value, helper }) {
   );
 }
 
+function recLabel(actionType) {
+  if (actionType === "stop_instance") {
+    return "Stop Instance";
+  }
+  if (actionType === "release_eip") {
+    return "Release EIP";
+  }
+  if (actionType === "delete_snapshot") {
+    return "Delete Snapshot";
+  }
+  return "Delete Volume";
+}
+
+function liveDashboardPath(task, seed) {
+  const params = new URLSearchParams({ task_name: task });
+  if (String(seed).trim() !== "") {
+    params.set("seed", String(seed).trim());
+  }
+  return `/live/dashboard?${params.toString()}`;
+}
+
 function ProfileCard({ title, profile }) {
   if (!profile) {
     return (
@@ -86,6 +107,11 @@ export default function App() {
   const [previewProfile, setPreviewProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [liveDashboard, setLiveDashboard] = useState(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveBusyKey, setLiveBusyKey] = useState("");
+  const [liveError, setLiveError] = useState("");
+  const [liveMessage, setLiveMessage] = useState("");
 
   const apiHint = useMemo(() => API_BASE_URL.replace(/^https?:\/\//, ""), []);
 
@@ -111,10 +137,37 @@ export default function App() {
       } catch {
         setPreviewProfile(null);
       }
+
+      await refreshLiveDashboard(false);
     }
 
     bootstrap();
   }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      refreshLiveDashboard(false);
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [task, seed]);
+
+  async function refreshLiveDashboard(showSpinner = true) {
+    if (showSpinner) {
+      setLiveLoading(true);
+    }
+    setLiveError("");
+
+    try {
+      const dashboard = await request(liveDashboardPath(task, seed), { method: "GET" });
+      setLiveDashboard(dashboard);
+    } catch (err) {
+      setLiveError(`Live dashboard failed: ${err.message}`);
+    } finally {
+      if (showSpinner) {
+        setLiveLoading(false);
+      }
+    }
+  }
 
   async function refreshPreview() {
     setError("");
@@ -136,10 +189,44 @@ export default function App() {
       await request(`/reset/${task}?seed=${seed}`, { method: "POST" });
       const active = await request("/profile", { method: "GET" });
       setActiveProfile(active);
+      await refreshLiveDashboard(false);
     } catch (err) {
       setError(`Reset failed: ${err.message}`);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function runLiveAction(actionType, resourceId, apply) {
+    const op = apply ? "apply" : "dry";
+    const key = `${actionType}:${resourceId}:${op}`;
+    setLiveBusyKey(key);
+    setLiveError("");
+    setLiveMessage("");
+
+    try {
+      const result = await request("/live/action", {
+        method: "POST",
+        body: JSON.stringify({
+          action_type: actionType,
+          resource_id: resourceId,
+          apply,
+        }),
+      });
+
+      setLiveMessage(result.message || "Action completed");
+      await refreshLiveDashboard(false);
+
+      try {
+        const active = await request("/profile", { method: "GET" });
+        setActiveProfile(active);
+      } catch {
+        setActiveProfile(null);
+      }
+    } catch (err) {
+      setLiveError(`Live action failed: ${err.message}`);
+    } finally {
+      setLiveBusyKey("");
     }
   }
 
@@ -202,6 +289,115 @@ export default function App() {
       <section className="profiles">
         <ProfileCard title="Preview Profile" profile={previewProfile} />
         <ProfileCard title="Active Profile" profile={activeProfile} />
+      </section>
+
+      <section className="live-shell">
+        <div className="live-top">
+          <div>
+            <p className="eyebrow">Live Dashboard</p>
+            <h2>Actionable Recommendations</h2>
+          </div>
+          <button type="button" onClick={() => refreshLiveDashboard(true)} disabled={liveLoading}>
+            {liveLoading ? "Refreshing..." : "Refresh Live"}
+          </button>
+        </div>
+
+        {liveError ? <p className="error-text">{liveError}</p> : null}
+        {liveMessage ? <p className="live-message">{liveMessage}</p> : null}
+
+        <div className="live-stats">
+          <StatCard
+            label="Live Connection"
+            value={liveDashboard?.connected ? "connected" : "offline"}
+            helper={liveDashboard?.region || "unknown region"}
+          />
+          <StatCard
+            label="Potential Savings"
+            value={fmtMoney(liveDashboard?.potential_monthly_savings_usd || 0)}
+            helper="monthly estimate"
+          />
+          <StatCard
+            label="Can Apply"
+            value={liveDashboard?.can_apply_actions ? "yes" : "no"}
+            helper="toggle via LIVE_DASHBOARD_ALLOW_APPLY"
+          />
+          <StatCard
+            label="Action History"
+            value={String(liveDashboard?.action_history?.length || 0)}
+            helper="latest 20 events"
+          />
+        </div>
+
+        <div className="live-grid">
+          <article className="live-card">
+            <h3>Recommendations</h3>
+            {liveDashboard?.recommendations?.length ? (
+              <ul className="rec-list">
+                {liveDashboard.recommendations.map((rec) => {
+                  const dryKey = `${rec.action_type}:${rec.resource_id}:dry`;
+                  const applyKey = `${rec.action_type}:${rec.resource_id}:apply`;
+
+                  return (
+                    <li className="rec-item" key={`${rec.action_type}:${rec.resource_id}`}>
+                      <div className="rec-copy">
+                        <p className="rec-title">
+                          {recLabel(rec.action_type)} - {rec.resource_name}
+                        </p>
+                        <p className="rec-meta">{rec.reason}</p>
+                        <p className="rec-meta">
+                          Risk: {rec.risk} | Est. savings: {fmtMoney(rec.estimated_monthly_savings_usd)}
+                        </p>
+                      </div>
+                      <div className="rec-actions">
+                        <button
+                          type="button"
+                          disabled={liveBusyKey !== ""}
+                          onClick={() => runLiveAction(rec.action_type, rec.resource_id, false)}
+                        >
+                          {liveBusyKey === dryKey ? "Running..." : "Dry Run"}
+                        </button>
+                        <button
+                          type="button"
+                          className="solid"
+                          disabled={liveBusyKey !== "" || !liveDashboard?.can_apply_actions}
+                          onClick={() => runLiveAction(rec.action_type, rec.resource_id, true)}
+                        >
+                          {liveBusyKey === applyKey ? "Applying..." : "Apply"}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="empty-text">No live recommendations available yet.</p>
+            )}
+          </article>
+
+          <article className="live-card">
+            <h3>Recent Actions</h3>
+            {liveDashboard?.action_history?.length ? (
+              <ul className="history-list">
+                {liveDashboard.action_history
+                  .slice()
+                  .reverse()
+                  .map((event, idx) => (
+                    <li className="history-item" key={`${event.timestamp}-${event.resource_id}-${idx}`}>
+                      <p>
+                        <strong>{recLabel(event.action_type)}</strong> on {event.resource_id}
+                      </p>
+                      <p>
+                        {event.dry_run ? "Dry run" : "Executed"} | {event.ok ? "ok" : "failed"} | savings {fmtMoney(event.estimated_monthly_savings_usd)}
+                      </p>
+                      <p>{event.message}</p>
+                    </li>
+                  ))}
+              </ul>
+            ) : (
+              <p className="empty-text">No actions recorded yet.</p>
+            )}
+          </article>
+        </div>
       </section>
     </main>
   );

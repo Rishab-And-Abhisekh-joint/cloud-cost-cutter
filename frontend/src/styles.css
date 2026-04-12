@@ -197,6 +197,116 @@ button:disabled {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+.live-shell {
+  margin-top: 22px;
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  background: rgba(8, 22, 36, 0.72);
+  padding: 18px;
+  animation: rise 900ms ease-out both;
+}
+
+.live-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.live-top h2 {
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+}
+
+.live-message {
+  margin: 12px 0 0;
+  color: var(--cool);
+}
+
+.live-stats {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.live-grid {
+  margin-top: 16px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.live-card {
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 16px;
+  background: var(--panel);
+}
+
+.live-card h3 {
+  margin: 0 0 12px;
+}
+
+.rec-list,
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.rec-item,
+.history-item {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(4, 10, 18, 0.6);
+}
+
+.rec-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.rec-title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.rec-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.rec-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.history-item p {
+  margin: 0 0 5px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.history-item p:last-child {
+  margin-bottom: 0;
+}
+
+.history-item strong {
+  color: var(--text);
+}
+
+.empty-text {
+  margin: 0;
+  color: var(--muted);
+}
+
 .profile-card {
   border: 1px solid var(--panel-border);
   border-radius: 14px;
@@ -245,6 +355,11 @@ button:disabled {
 @media (max-width: 720px) {
   .page-shell {
     padding-top: 32px;
+  }
+
+  .live-top {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .profile-grid {

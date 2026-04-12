@@ -114,6 +114,30 @@ class CloudCostEnvironment:
             raise RuntimeError("Environment not initialized")
         return self.state
 
+    def get_observation_snapshot(self) -> CloudCostObservation:
+        if not self.state:
+            raise RuntimeError("Environment not initialized")
+        return self._build_observation("Live dashboard snapshot")
+
+    def get_resource_summary(self, resource_id: str) -> ResourceSummary | None:
+        for summary in self._resource_summaries():
+            if summary.resource_id == resource_id:
+                return summary
+        return None
+
+    def get_resource_counts(self) -> dict[str, int]:
+        if not self.account:
+            raise RuntimeError("Environment not initialized")
+
+        return {
+            "compute_instances": len(self.account.compute_instances),
+            "storage_volumes": len(self.account.storage_volumes),
+            "databases": len(self.account.databases),
+            "load_balancers": len(self.account.load_balancers),
+            "snapshots": sum(len(v.snapshots) for v in self.account.storage_volumes),
+            "elastic_ips": sum(len(lb.elastic_ips) for lb in self.account.load_balancers),
+        }
+
     def get_active_profile(self) -> dict[str, object]:
         if not self.state or not self.account:
             raise RuntimeError("Environment not initialized")
