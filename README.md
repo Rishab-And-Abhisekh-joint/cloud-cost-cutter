@@ -1,3 +1,13 @@
+---
+title: CloudCostEnv
+emoji: "🚀"
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # CloudCostEnv
 
 CloudCostEnv is an OpenEnv-style RL environment for cloud cost optimization. It simulates cloud accounts with realistic waste patterns and asks an agent to optimize safely under SLA and dependency constraints.

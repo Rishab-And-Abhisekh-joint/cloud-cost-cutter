@@ -8,7 +8,7 @@ WORKDIR /app
 
 COPY pyproject.toml README.md /app/
 COPY cloud_cost_env /app/cloud_cost_env
-COPY inference.py inference_llm.py openenv.yaml .env.example /app/
+COPY inference.py inference_llm.py openenv.yaml /app/
 
 RUN python -m pip install --upgrade pip && pip install .
 
