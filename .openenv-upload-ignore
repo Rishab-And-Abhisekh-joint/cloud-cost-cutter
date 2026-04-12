@@ -1,0 +1,6 @@
+frontend/**
+railway.json
+.github/**
+.venv/**
+.env
+.env.*
