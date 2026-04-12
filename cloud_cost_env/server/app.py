@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import os
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 import uvicorn
 
 from cloud_cost_env.models import (
@@ -17,6 +18,7 @@ from cloud_cost_env.models import (
     StepResult,
 )
 from cloud_cost_env.server.environment import CloudCostEnvironment
+from cloud_cost_env.server.web_tester import TESTER_HTML
 
 
 def _parse_allowed_origins() -> list[str]:
@@ -133,8 +135,8 @@ def create_fastapi_app() -> FastAPI:
 
     @app.get("/web")
     @app.get("/web/")
-    def web_root() -> dict[str, str]:
-        return {"status": "ok", "service": "CloudCostEnv"}
+    def web_root() -> HTMLResponse:
+        return HTMLResponse(TESTER_HTML)
 
     @app.get("/health")
     def health() -> dict[str, str]:
