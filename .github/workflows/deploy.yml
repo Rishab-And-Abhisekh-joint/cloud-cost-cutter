@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  ENABLE_RAILWAY_DEPLOY: "false"
+  ENABLE_RAILWAY_DEPLOY: "true"
 
 jobs:
   deploy-backend:
