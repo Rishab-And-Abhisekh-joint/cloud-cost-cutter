@@ -33,6 +33,11 @@ def create_fastapi_app() -> FastAPI:
     def root() -> dict[str, str]:
         return {"status": "ok", "service": "CloudCostEnv"}
 
+    @app.get("/web")
+    @app.get("/web/")
+    def web_root() -> dict[str, str]:
+        return {"status": "ok", "service": "CloudCostEnv"}
+
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
