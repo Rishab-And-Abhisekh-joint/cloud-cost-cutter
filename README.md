@@ -102,10 +102,16 @@ python inference_rl.py
 Enable RL runtime in API server:
 
 ```bash
-set AGENT_CONTROL_MODE=rl
+set AGENT_CONTROL_MODE=auto
 set RL_POLICY_PATH=cloud_cost_env/data/rl/q_policy_v1.json
 uvicorn cloud_cost_env.server.app:app --host 127.0.0.1 --port 8000
 ```
+
+Control mode behavior:
+
+- `auto` (recommended): use RL when artifact is loaded and validation passes, otherwise heuristic fallback.
+- `rl`: force RL mode (status reports validation error if policy is missing/invalid).
+- `heuristic`: disable RL ranking and run heuristic-only behavior.
 
 LLM runner (separate from baseline):
 

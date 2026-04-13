@@ -62,7 +62,7 @@ def create_fastapi_app() -> FastAPI:
     azure_connector = AzureLiveConnector()
     logger.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
     allowed_origins = _parse_allowed_origins()
-    agent_control_mode = os.getenv("AGENT_CONTROL_MODE", "heuristic").strip().lower() or "heuristic"
+    agent_control_mode = os.getenv("AGENT_CONTROL_MODE", "auto").strip().lower() or "auto"
     configured_policy_path = os.getenv("RL_POLICY_PATH", str(DEFAULT_RL_POLICY_PATH)).strip()
     resolved_policy_path = configured_policy_path or str(DEFAULT_RL_POLICY_PATH)
     rl_policy = QTablePolicy(resolved_policy_path)
@@ -97,6 +97,13 @@ def create_fastapi_app() -> FastAPI:
 
     def _now_iso() -> str:
         return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+    def _effective_control_mode() -> str:
+        if agent_control_mode == "auto":
+            return "rl" if rl_policy.loaded else "heuristic"
+        if agent_control_mode == "rl":
+            return "rl"
+        return "heuristic"
 
     def _ensure_live_env(task_name: str = "full_optimization", seed: int | None = None) -> None:
         if env.state is None:
@@ -145,9 +152,9 @@ def create_fastapi_app() -> FastAPI:
 
         rl_last_validated_at = _now_iso()
 
-        if agent_control_mode != "rl":
+        if _effective_control_mode() != "rl":
             rl_policy_inference_ok = False
-            rl_validation_error = "AGENT_CONTROL_MODE is not 'rl'"
+            rl_validation_error = "Effective control mode is heuristic"
             return False
 
         if not rl_policy.loaded:
@@ -177,7 +184,7 @@ def create_fastapi_app() -> FastAPI:
         if not candidates:
             return []
 
-        if agent_control_mode == "rl" and _validate_rl_runtime(force=False):
+        if _effective_control_mode() == "rl" and _validate_rl_runtime(force=False):
             ranked = rl_policy.rank_candidates(observation, candidates)
         else:
             ranked = _heuristic_rank(candidates)
@@ -323,7 +330,8 @@ def create_fastapi_app() -> FastAPI:
         else:
             _validate_rl_runtime(force=False)
 
-        rl_enabled = agent_control_mode == "rl" and rl_policy.loaded and rl_policy_inference_ok
+        active_control_mode = _effective_control_mode()
+        rl_enabled = active_control_mode == "rl" and rl_policy.loaded and rl_policy_inference_ok
         notes = [
             "Environment stepping executes through ActionEngine command application and Grader reward shaping.",
             "RL enabled is true only when control mode is rl, artifact is loaded, and runtime inference validation passes.",
@@ -336,7 +344,8 @@ def create_fastapi_app() -> FastAPI:
         snapshot = rl_policy.status_snapshot()
 
         return {
-            "control_mode": agent_control_mode,
+            "control_mode": active_control_mode,
+            "control_mode_config": agent_control_mode,
             "rl_enabled": rl_enabled,
             "rl_policy_loaded": rl_policy.loaded,
             "rl_policy_validated": rl_policy_inference_ok,
@@ -363,7 +372,7 @@ def create_fastapi_app() -> FastAPI:
             source = "heuristic"
             selected = None
 
-            if agent_control_mode == "rl" and _validate_rl_runtime(force=False):
+            if _effective_control_mode() == "rl" and _validate_rl_runtime(force=False):
                 source = "rl"
                 selected = rl_policy.select_candidate(obs, candidates)
             elif candidates:
