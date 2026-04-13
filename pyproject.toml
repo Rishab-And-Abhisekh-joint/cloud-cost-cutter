@@ -29,6 +29,8 @@ inference-llm = "cloud_cost_env.inference_llm:run"
 inference-rl = "cloud_cost_env.inference_rl:run"
 train-rl-policy = "cloud_cost_env.rl.train:main"
 eval-rl-policy = "cloud_cost_env.rl.evaluate:main"
+eval-heuristic-policy = "cloud_cost_env.rl.evaluate_heuristic:main"
+eval-baseline-policy = "cloud_cost_env.rl.evaluate_baseline:main"
 
 [tool.setuptools.packages.find]
 include = ["cloud_cost_env*"]

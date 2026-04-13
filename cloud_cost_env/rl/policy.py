@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 import json
@@ -32,12 +32,25 @@ def _safe_age_from_status(status: str) -> int:
 def _estimate_savings(summary: ResourceSummary, action_type: str) -> float:
     if action_type == "stop_instance":
         return round(summary.monthly_cost * 0.8, 2)
+    if action_type == "rightsize_instance":
+        return round(summary.monthly_cost * 0.4, 2)
     return round(summary.monthly_cost, 2)
 
 
-def candidate_to_cloud_action(action_type: str, resource_id: str) -> CloudCostAction:
+def candidate_to_cloud_action(action_type: str, resource_id: str, params: dict[str, Any] | None = None) -> CloudCostAction:
+    action_params = params or {}
     if action_type == "stop_instance":
         return CloudCostAction(command="stop", resource_id=resource_id, params={})
+    if action_type == "rightsize_instance":
+        return CloudCostAction(
+            command="rightsize",
+            resource_id=resource_id,
+            params=action_params or {"new_type": "m5.xlarge"},
+        )
+    if action_type == "terminate_instance":
+        return CloudCostAction(command="terminate", resource_id=resource_id, params={})
+    if action_type == "delete_load_balancer":
+        return CloudCostAction(command="terminate", resource_id=resource_id, params={})
     if action_type == "release_eip":
         return CloudCostAction(command="detach_ip", resource_id=resource_id, params={})
     if action_type == "delete_snapshot":
@@ -57,44 +70,65 @@ class RLActionCandidate:
     risk: str
     estimated_monthly_savings_usd: float
     waste_signal: float
+    params: dict[str, Any] = field(default_factory=dict)
 
     def to_cloud_action(self) -> CloudCostAction:
-        return candidate_to_cloud_action(self.action_type, self.resource_id)
+        return candidate_to_cloud_action(self.action_type, self.resource_id, self.params)
 
 
-def _candidate_from_summary(summary: ResourceSummary) -> RLActionCandidate | None:
-    action_type: str | None = None
-    reason: str | None = None
-
-    if summary.resource_type == "elastic_ip" and summary.status == "unattached":
-        action_type = "release_eip"
-        reason = "Unattached Elastic IP can be released immediately"
-    elif summary.resource_type == "snapshot":
-        age_days = _safe_age_from_status(summary.status)
-        if age_days > 90:
-            action_type = "delete_snapshot"
-            reason = f"Old snapshot age {age_days} days"
-    elif summary.resource_type == "volume" and summary.status == "orphaned":
-        action_type = "delete_volume"
-        reason = "Orphaned volume has no active attachment"
-    elif summary.resource_type == "compute" and summary.status == "running" and summary.waste_signal >= 0.65:
-        action_type = "stop_instance"
-        reason = "Running instance appears underutilized"
-
-    if not action_type or not reason:
-        return None
-
-    key = action_type
+def _make_candidate(
+    summary: ResourceSummary,
+    action_type: str,
+    reason: str,
+    params: dict[str, Any] | None = None,
+) -> RLActionCandidate:
     return RLActionCandidate(
         action_type=action_type,
-        action_key=key,
+        action_key=action_type,
         resource_id=summary.resource_id,
         resource_name=summary.resource_id,
         reason=reason,
         risk=summary.risk,
         estimated_monthly_savings_usd=_estimate_savings(summary, action_type),
         waste_signal=float(summary.waste_signal),
+        params=params or {},
     )
+
+
+def _candidates_from_summary(summary: ResourceSummary) -> list[RLActionCandidate]:
+    out: list[RLActionCandidate] = []
+
+    if summary.resource_type == "elastic_ip" and summary.status == "unattached":
+        out.append(_make_candidate(summary, "release_eip", "Unattached Elastic IP can be released immediately"))
+    elif summary.resource_type == "snapshot":
+        age_days = _safe_age_from_status(summary.status)
+        if age_days > 90:
+            out.append(_make_candidate(summary, "delete_snapshot", f"Old snapshot age {age_days} days"))
+    elif summary.resource_type == "volume" and summary.status == "orphaned":
+        out.append(_make_candidate(summary, "delete_volume", "Orphaned volume has no active attachment"))
+    elif summary.resource_type == "load_balancer" and summary.status == "idle":
+        out.append(_make_candidate(summary, "delete_load_balancer", "Load balancer has no targets and zero traffic"))
+    elif summary.resource_type == "compute":
+        if summary.status == "stopped" and summary.waste_signal >= 0.95:
+            out.append(
+                _make_candidate(summary, "terminate_instance", "Stopped compute with stale connection can be terminated")
+            )
+        elif summary.status == "running" and summary.waste_signal >= 0.65:
+            out.append(
+                _make_candidate(
+                    summary,
+                    "rightsize_instance",
+                    "Running compute appears over-provisioned; rightsize to lower tier",
+                    params={"new_type": "m5.xlarge"},
+                )
+            )
+
+            if summary.risk != "high":
+                out.append(
+                    _make_candidate(summary, "stop_instance", "Non-critical running compute can be temporarily stopped")
+                )
+
+    return out
 
 
 def build_action_candidates(summaries: list[ResourceSummary]) -> list[RLActionCandidate]:
@@ -108,14 +142,12 @@ def build_action_candidates(summaries: list[ResourceSummary]) -> list[RLActionCa
     seen: set[tuple[str, str]] = set()
 
     for summary in ranked:
-        candidate = _candidate_from_summary(summary)
-        if not candidate:
-            continue
-        key = (candidate.action_type, candidate.resource_id)
-        if key in seen:
-            continue
-        seen.add(key)
-        candidates.append(candidate)
+        for candidate in _candidates_from_summary(summary):
+            key = (candidate.action_type, candidate.resource_id)
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append(candidate)
 
     return candidates
 

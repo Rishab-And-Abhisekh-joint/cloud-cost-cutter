@@ -122,6 +122,8 @@ def create_fastapi_app() -> FastAPI:
     def _estimate_savings(summary: ResourceSummary, action_type: str) -> float:
         if action_type == "stop_instance":
             return round(summary.monthly_cost * 0.8, 2)
+        if action_type == "rightsize_instance":
+            return round(summary.monthly_cost * 0.4, 2)
         return round(summary.monthly_cost, 2)
 
     def _candidate_to_live_recommendation(candidate) -> LiveRecommendation:

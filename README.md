@@ -94,6 +94,10 @@ python -m cloud_cost_env.rl.train --episodes 1200 --output cloud_cost_env/data/r
 # Evaluate a trained artifact
 python -m cloud_cost_env.rl.evaluate --policy cloud_cost_env/data/rl/q_policy_v1.json --episodes 120
 
+# Compare against heuristic and baseline policies
+python -m cloud_cost_env.rl.evaluate_heuristic --episodes 120
+python -m cloud_cost_env.rl.evaluate_baseline --episodes 120
+
 # Run inference loop with RL policy
 set RL_POLICY_PATH=cloud_cost_env/data/rl/q_policy_v1.json
 python inference_rl.py

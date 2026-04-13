@@ -6,12 +6,14 @@ from pathlib import Path
 import json
 import random
 
+from cloud_cost_env.baseline_runner import pick_action
 from cloud_cost_env.models import CloudCostAction, CloudCostObservation
 from cloud_cost_env.server.environment import CloudCostEnvironment
 from cloud_cost_env.rl.policy import DEFAULT_RL_POLICY_PATH, build_action_candidates, observation_state_key
 
 TASKS = ["cleanup", "rightsize", "full_optimization"]
-SKIP_ACTION_KEY = "skip:low:w0"
+SKIP_ACTION_KEY = "skip"
+EXPERT_ACTION_BONUS = 0.18
 
 
 def _safe_q(q_table: dict[str, dict[str, float]], state_key: str, action_key: str) -> float:
@@ -30,6 +32,50 @@ def _best_candidates_by_key(observation: CloudCostObservation):
         if prev is None or candidate.estimated_monthly_savings_usd > prev.estimated_monthly_savings_usd:
             by_key[candidate.action_key] = candidate
     return list(by_key.values())
+
+
+def _expert_action_key(
+    observation: CloudCostObservation,
+    candidates,
+    attempted: set[tuple[str, str]],
+) -> str | None:
+    if not candidates:
+        return None
+
+    payload = pick_action(observation.model_dump(), attempted)
+    cmd = str(payload.get("command", "")).strip().lower()
+    resource_id = str(payload.get("resource_id", "")).strip()
+
+    action_type = ""
+    if cmd in {"detach_ip", "release_ip"}:
+        action_type = "release_eip"
+    elif cmd == "delete_snapshot":
+        action_type = "delete_snapshot"
+    elif cmd == "rightsize":
+        action_type = "rightsize_instance"
+    elif cmd == "stop":
+        action_type = "stop_instance"
+    elif cmd == "terminate":
+        # map terminate to matching candidate resource type
+        if any(c.action_type == "terminate_instance" and c.resource_id == resource_id for c in candidates):
+            action_type = "terminate_instance"
+        elif any(c.action_type == "delete_load_balancer" and c.resource_id == resource_id for c in candidates):
+            action_type = "delete_load_balancer"
+        elif any(c.action_type == "delete_volume" and c.resource_id == resource_id for c in candidates):
+            action_type = "delete_volume"
+
+    if not action_type:
+        return None
+
+    for candidate in candidates:
+        if candidate.action_type == action_type and candidate.resource_id == resource_id:
+            return candidate.action_key
+
+    for candidate in candidates:
+        if candidate.action_type == action_type:
+            return candidate.action_key
+
+    return None
 
 
 def _evaluate_q_table(
@@ -105,10 +151,12 @@ def train_q_table(
         obs = env.reset(task, seed=rng.randint(1, 2_000_000))
         done = False
         episode_reward = 0.0
+        attempted: set[tuple[str, str]] = set()
 
         while not done:
             state_key = observation_state_key(obs)
             candidates = _best_candidates_by_key(obs)
+            expert_key = _expert_action_key(obs, candidates, attempted)
 
             action_key = SKIP_ACTION_KEY
             if candidates:
@@ -118,7 +166,8 @@ def train_q_table(
                     chosen = max(
                         candidates,
                         key=lambda cand: (
-                            _safe_q(q_table, state_key, cand.action_key),
+                            _safe_q(q_table, state_key, cand.action_key)
+                            + (EXPERT_ACTION_BONUS if expert_key and cand.action_key == expert_key else 0.0),
                             cand.estimated_monthly_savings_usd,
                         ),
                     )
@@ -126,6 +175,8 @@ def train_q_table(
                 action_key = chosen.action_key
             else:
                 action = CloudCostAction(command="skip", resource_id="", params={})
+
+            attempted.add((action.command, action.resource_id))
 
             result = env.step(action)
             reward = float(result.reward)
@@ -144,6 +195,12 @@ def train_q_table(
             new_q = old_q + (alpha * (target_q - old_q))
             _set_q(q_table, state_key, action_key, new_q)
 
+            if expert_key is not None and expert_key != action_key:
+                expert_old_q = _safe_q(q_table, state_key, expert_key)
+                expert_target = reward + EXPERT_ACTION_BONUS + (gamma * next_best_q)
+                expert_new_q = expert_old_q + (alpha * (expert_target - expert_old_q))
+                _set_q(q_table, state_key, expert_key, expert_new_q)
+
             obs = next_obs
             done = result.done
 
@@ -157,13 +214,14 @@ def train_q_table(
         "version": "qlearn-v1",
         "created_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "state_encoder": "observation_state_key_v1",
-        "action_encoder": "action_type_risk_waste_bucket_v1",
+        "action_encoder": "action_type_v2",
         "training": {
             "episodes": episodes,
             "alpha": alpha,
             "gamma": gamma,
             "epsilon_start": epsilon_start,
             "epsilon_end": epsilon_end,
+            "expert_bonus": EXPERT_ACTION_BONUS,
             "seed": seed,
             "max_steps": env.max_steps,
             "tasks": TASKS,

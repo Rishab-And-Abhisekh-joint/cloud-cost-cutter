@@ -149,7 +149,15 @@ class LiveActionResult(BaseModel):
 
 
 class LiveRecommendation(BaseModel):
-    action_type: Literal["stop_instance", "release_eip", "delete_snapshot", "delete_volume"]
+    action_type: Literal[
+        "stop_instance",
+        "release_eip",
+        "delete_snapshot",
+        "delete_volume",
+        "terminate_instance",
+        "delete_load_balancer",
+        "rightsize_instance",
+    ]
     resource_id: str
     resource_name: str
     reason: str
@@ -173,7 +181,15 @@ class LiveAwsDashboard(BaseModel):
 
 
 class LiveActionRequest(BaseModel):
-    action_type: Literal["stop_instance", "release_eip", "delete_snapshot", "delete_volume"]
+    action_type: Literal[
+        "stop_instance",
+        "release_eip",
+        "delete_snapshot",
+        "delete_volume",
+        "terminate_instance",
+        "delete_load_balancer",
+        "rightsize_instance",
+    ]
     resource_id: str
     apply: bool = False
 

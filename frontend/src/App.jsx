@@ -158,11 +158,20 @@ function recLabel(actionType) {
   if (actionType === "stop_instance") {
     return "Stop Instance";
   }
+  if (actionType === "terminate_instance") {
+    return "Terminate Instance";
+  }
   if (actionType === "release_eip") {
     return "Release EIP";
   }
   if (actionType === "delete_snapshot") {
     return "Delete Snapshot";
+  }
+  if (actionType === "delete_load_balancer") {
+    return "Delete Load Balancer";
+  }
+  if (actionType === "rightsize_instance") {
+    return "Rightsize Instance";
   }
   return "Delete Volume";
 }
@@ -179,11 +188,20 @@ function signalLabel(actionType) {
   if (actionType === "stop_instance") {
     return "Compute";
   }
+  if (actionType === "terminate_instance") {
+    return "Compute";
+  }
   if (actionType === "release_eip") {
     return "Network";
   }
   if (actionType === "delete_snapshot") {
     return "Snapshot";
+  }
+  if (actionType === "delete_load_balancer") {
+    return "Network";
+  }
+  if (actionType === "rightsize_instance") {
+    return "Compute";
   }
   return "Storage";
 }
