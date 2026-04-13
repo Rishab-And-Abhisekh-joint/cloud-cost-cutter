@@ -309,7 +309,7 @@ Common optional parameters:
 - `LIVE_DASHBOARD_ALLOW_APPLY` (set `false` to force dry-run only)
 - `LOG_LEVEL` (default `INFO`)
 - `FORWARDED_ALLOW_IPS` (default `*`)
-- `UVICORN_WORKERS` (default `2` in Docker runtime)
+- `UVICORN_WORKERS` (default `1` in Docker runtime; keep `1` unless state is externalized)
 - `RATE_LIMIT_WINDOW_SECONDS` (default `60`)
 - `RATE_LIMIT_RESET_PER_WINDOW` (default `60`)
 - `RATE_LIMIT_STEP_PER_WINDOW` (default `180`)
