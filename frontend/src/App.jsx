@@ -32,6 +32,17 @@ function fmtMoney(value) {
   }).format(value || 0);
 }
 
+function fmtPercent(value) {
+  return `${Number(value || 0).toFixed(1)}%`;
+}
+
+function sumValues(record) {
+  if (!record || typeof record !== "object") {
+    return 0;
+  }
+  return Object.values(record).reduce((acc, value) => acc + Number(value || 0), 0);
+}
+
 async function request(path, options = {}) {
   const method = String(options.method || "GET").toUpperCase();
   const canRetry = method === "GET" || method === "HEAD" || method === "OPTIONS";
@@ -96,10 +107,10 @@ async function request(path, options = {}) {
 
 function StatCard({ label, value, helper }) {
   return (
-    <article className="stat-card">
-      <p className="stat-label">{label}</p>
-      <p className="stat-value">{value}</p>
-      {helper ? <p className="stat-helper">{helper}</p> : null}
+    <article className="kpi-card">
+      <p className="kpi-label">{label}</p>
+      <p className="kpi-value">{value}</p>
+      {helper ? <p className="kpi-helper">{helper}</p> : null}
     </article>
   );
 }
@@ -125,46 +136,126 @@ function liveDashboardPath(task, seed) {
   return `/live/dashboard?${params.toString()}`;
 }
 
+function signalLabel(actionType) {
+  if (actionType === "stop_instance") {
+    return "Compute";
+  }
+  if (actionType === "release_eip") {
+    return "Network";
+  }
+  if (actionType === "delete_snapshot") {
+    return "Snapshot";
+  }
+  return "Storage";
+}
+
 function ProfileCard({ title, profile }) {
   if (!profile) {
     return (
-      <article className="profile-card muted">
-        <h3>{title}</h3>
-        <p>No data yet.</p>
+      <article className="profile-card muted profile-loading">
+        <header>
+          <h3>{title}</h3>
+          <p>Waiting for data</p>
+        </header>
+        <p>No profile loaded yet.</p>
       </article>
     );
   }
 
+  const resources = profile.resources || {};
+  const wasteSignals = profile.waste_signals || {};
+  const safety = profile.safety || {};
+  const cost = profile.cost || {};
+
+  const wasteTotal = sumValues(wasteSignals);
+  const savingsGap = Math.max(0, Number(cost.current_monthly_spend || 0) - Number(cost.target_monthly_spend || 0));
+  const criticalDensity =
+    Number(resources.compute || 0) > 0
+      ? (Number(safety.prod_critical_compute || 0) / Number(resources.compute || 1)) * 100
+      : 0;
+
   return (
     <article className="profile-card">
-      <h3>{title}</h3>
+      <header className="profile-header">
+        <div>
+          <h3>{title}</h3>
+          <p>
+            {profile.task_name} · seed {profile.seed}
+          </p>
+        </div>
+        <span className={`profile-mode profile-mode-${profile.mode}`}>{profile.mode}</span>
+      </header>
+
       <div className="profile-grid">
+        <div className="profile-metric">
+          <p>Monthly Spend</p>
+          <strong>{fmtMoney(cost.current_monthly_spend)}</strong>
+        </div>
+        <div className="profile-metric">
+          <p>Target Spend</p>
+          <strong>{fmtMoney(cost.target_monthly_spend)}</strong>
+        </div>
+        <div className="profile-metric">
+          <p>Savings Gap</p>
+          <strong>{fmtMoney(savingsGap)}</strong>
+        </div>
+        <div className="profile-metric">
+          <p>Max Savings (8 steps)</p>
+          <strong>{fmtMoney(cost.max_possible_savings_8_steps)}</strong>
+        </div>
+        <div className="profile-metric">
+          <p>Core Resources</p>
+          <strong>{Number(resources.core_total || 0)}</strong>
+        </div>
+        <div className="profile-metric">
+          <p>Waste Signals</p>
+          <strong>{wasteTotal}</strong>
+        </div>
+      </div>
+
+      <div className="profile-rail">
         <div>
-          <p>Task</p>
-          <strong>{profile.task}</strong>
+          <p>Critical Prod Density</p>
+          <strong>{fmtPercent(criticalDensity)}</strong>
         </div>
         <div>
-          <p>Seed</p>
-          <strong>{profile.seed}</strong>
+          <p>Dependency Edges</p>
+          <strong>{Number(safety.dependency_edges || 0)}</strong>
         </div>
         <div>
-          <p>Total Cost</p>
-          <strong>{fmtMoney(profile.total_monthly_cost)}</strong>
-        </div>
-        <div>
-          <p>Potential Waste</p>
-          <strong>{fmtMoney(profile.theoretical_max_savings)}</strong>
-        </div>
-        <div>
-          <p>Resources</p>
-          <strong>{profile.resource_count}</strong>
-        </div>
-        <div>
-          <p>SLA Sensitive</p>
-          <strong>{profile.sla_sensitive_count}</strong>
+          <p>Snapshots</p>
+          <strong>{Number(resources.snapshots || 0)}</strong>
         </div>
       </div>
     </article>
+  );
+}
+
+function ResourceMap({ counts }) {
+  const entries = Object.entries(counts || {}).sort((a, b) => Number(b[1]) - Number(a[1]));
+  if (!entries.length) {
+    return <p className="empty-text">Resource map is available once live dashboard data is loaded.</p>;
+  }
+
+  const maxValue = Number(entries[0][1] || 1);
+
+  return (
+    <div className="resource-map">
+      {entries.map(([name, value]) => {
+        const pct = Math.max(5, (Number(value || 0) / maxValue) * 100);
+        return (
+          <div className="resource-row" key={name}>
+            <div className="resource-meta">
+              <span>{name.replace(/_/g, " ")}</span>
+              <strong>{Number(value || 0)}</strong>
+            </div>
+            <div className="resource-bar-track">
+              <div className="resource-bar-fill" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -183,6 +274,12 @@ export default function App() {
   const [liveMessage, setLiveMessage] = useState("");
 
   const apiHint = useMemo(() => API_BASE_URL.replace(/^https?:\/\//, ""), []);
+  const currentCost = Number(activeProfile?.cost?.current_monthly_spend || previewProfile?.cost?.current_monthly_spend || 0);
+  const potentialSavings = Number(liveDashboard?.potential_monthly_savings_usd || activeProfile?.cost?.max_possible_savings_8_steps || 0);
+  const optimizationPressure = currentCost > 0 ? Math.min(100, (potentialSavings / currentCost) * 100) : 0;
+  const currentTaskName = activeProfile?.task_name || task;
+  const activeStep = Number(activeProfile?.step_count || 0);
+  const lastUpdate = liveDashboard?.updated_at ? new Date(liveDashboard.updated_at).toLocaleTimeString() : "n/a";
 
   useEffect(() => {
     async function bootstrap() {
@@ -300,71 +397,114 @@ export default function App() {
   }
 
   return (
-    <main className="page-shell">
-      <div className="ambient one" />
-      <div className="ambient two" />
-      <header className="hero">
-        <p className="eyebrow">CloudCostEnv Live Control</p>
-        <h1>Deploy Once, Benchmark Anywhere</h1>
-        <p className="subtitle">
-          This dashboard talks directly to your Railway-hosted environment API.
-          Validate profiles, start seeded episodes, and track scenario scale from Vercel.
-        </p>
+    <main className="ui-shell">
+      <div className="noise-layer" />
+      <div className="orb orb-a" />
+      <div className="orb orb-b" />
+
+      <header className="topbar">
+        <div className="brand-wrap">
+          <div className="brand-mark">CC</div>
+          <div>
+            <p className="eyebrow">CloudCostEnv Command Center</p>
+            <h1>Professional FinOps Operations Dashboard</h1>
+          </div>
+        </div>
+        <div className="status-cluster">
+          <span className={`pill ${health === "online" ? "pill-good" : "pill-bad"}`}>Backend {health}</span>
+          <span className="pill pill-soft">API {apiHint}</span>
+          <span className="pill pill-soft">Updated {lastUpdate}</span>
+        </div>
       </header>
 
-      <section className="stats">
-        <StatCard label="Backend" value={health} helper={apiHint} />
+      <section className="hero-panel">
+        <div>
+          <p className="hero-kicker">Operational Snapshot</p>
+          <p className="hero-copy">
+            Monitor optimization pressure, run deterministic episodes, and execute safe actions from a single
+            production-grade interface.
+          </p>
+        </div>
+        <div className="pressure-panel">
+          <p>Optimization Pressure</p>
+          <strong>{fmtPercent(optimizationPressure)}</strong>
+          <div className="pressure-track">
+            <div className="pressure-fill" style={{ width: `${optimizationPressure}%` }} />
+          </div>
+          <small>
+            Potential savings {fmtMoney(potentialSavings)} of current spend {fmtMoney(currentCost)}
+          </small>
+        </div>
+      </section>
+
+      <section className="kpi-grid">
+        <StatCard label="Active Task" value={currentTaskName} helper={`step ${activeStep}`} />
         <StatCard
-          label="Current Task"
-          value={activeProfile?.task || "none"}
-          helper={activeProfile ? `seed ${activeProfile.seed}` : "no active episode"}
+          label="Monthly Spend"
+          value={fmtMoney(currentCost)}
+          helper={activeProfile?.seed ? `seed ${activeProfile.seed}` : "no active episode"}
         />
         <StatCard
-          label="Current Potential Waste"
-          value={fmtMoney(activeProfile?.theoretical_max_savings || 0)}
-          helper="theoretical ceiling"
+          label="Potential Savings"
+          value={fmtMoney(potentialSavings)}
+          helper="ranked action estimate"
+        />
+        <StatCard
+          label="Actions Logged"
+          value={String(liveDashboard?.action_history?.length || 0)}
+          helper={liveDashboard?.can_apply_actions ? "apply enabled" : "dry-run mode"}
         />
       </section>
 
-      <section className="control-panel">
-        <div className="field-group">
-          <label htmlFor="task">Task</label>
-          <select id="task" value={task} onChange={(e) => setTask(e.target.value)}>
-            {TASKS.map((entry) => (
-              <option key={entry} value={entry}>
-                {entry}
-              </option>
-            ))}
-          </select>
+      <section className="studio-panel">
+        <div className="studio-head">
+          <div>
+            <p className="eyebrow">Scenario Studio</p>
+            <h2>Configure Deterministic Benchmark Runs</h2>
+          </div>
+          <span className="studio-meta">Task seeds are replayable for audit and comparison</span>
         </div>
 
-        <div className="field-group">
-          <label htmlFor="seed">Seed</label>
-          <input id="seed" value={seed} onChange={(e) => setSeed(e.target.value)} />
-        </div>
+        <div className="studio-controls">
+          <div className="field-group">
+            <label htmlFor="task">Task</label>
+            <select id="task" value={task} onChange={(e) => setTask(e.target.value)}>
+              {TASKS.map((entry) => (
+                <option key={entry} value={entry}>
+                  {entry}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="actions">
-          <button type="button" onClick={refreshPreview} disabled={loading}>
-            Preview Scenario
-          </button>
-          <button type="button" className="solid" onClick={startEpisode} disabled={loading}>
-            Start Episode
-          </button>
+          <div className="field-group">
+            <label htmlFor="seed">Seed</label>
+            <input id="seed" value={seed} onChange={(e) => setSeed(e.target.value)} />
+          </div>
+
+          <div className="actions">
+            <button type="button" onClick={refreshPreview} disabled={loading}>
+              Preview Scenario
+            </button>
+            <button type="button" className="solid" onClick={startEpisode} disabled={loading}>
+              Start Episode
+            </button>
+          </div>
         </div>
       </section>
 
       {error ? <p className="error-text">{error}</p> : null}
 
-      <section className="profiles">
+      <section className="profile-stack">
         <ProfileCard title="Preview Profile" profile={previewProfile} />
         <ProfileCard title="Active Profile" profile={activeProfile} />
       </section>
 
-      <section className="live-shell">
-        <div className="live-top">
+      <section className="ops-shell">
+        <div className="ops-top">
           <div>
             <p className="eyebrow">Live Dashboard</p>
-            <h2>Actionable Recommendations</h2>
+            <h2>Optimization Queue And Execution Console</h2>
           </div>
           <button type="button" onClick={() => refreshLiveDashboard(true)} disabled={liveLoading}>
             {liveLoading ? "Refreshing..." : "Refresh Live"}
@@ -374,7 +514,7 @@ export default function App() {
         {liveError ? <p className="error-text">{liveError}</p> : null}
         {liveMessage ? <p className="live-message">{liveMessage}</p> : null}
 
-        <div className="live-stats">
+        <div className="kpi-grid compact">
           <StatCard
             label="Live Connection"
             value={liveDashboard?.connected ? "connected" : "offline"}
@@ -397,9 +537,9 @@ export default function App() {
           />
         </div>
 
-        <div className="live-grid">
-          <article className="live-card">
-            <h3>Recommendations</h3>
+        <div className="ops-grid">
+          <article className="ops-card">
+            <h3>Prioritized Recommendations</h3>
             {liveDashboard?.recommendations?.length ? (
               <ul className="rec-list">
                 {liveDashboard.recommendations.map((rec) => {
@@ -409,12 +549,11 @@ export default function App() {
                   return (
                     <li className="rec-item" key={`${rec.action_type}:${rec.resource_id}`}>
                       <div className="rec-copy">
-                        <p className="rec-title">
-                          {recLabel(rec.action_type)} - {rec.resource_name}
-                        </p>
+                        <p className="rec-title">{recLabel(rec.action_type)} · {rec.resource_name}</p>
+                        <p className="rec-badge">{signalLabel(rec.action_type)}</p>
                         <p className="rec-meta">{rec.reason}</p>
                         <p className="rec-meta">
-                          Risk: {rec.risk} | Est. savings: {fmtMoney(rec.estimated_monthly_savings_usd)}
+                          Risk {rec.risk} · Est. savings {fmtMoney(rec.estimated_monthly_savings_usd)}
                         </p>
                       </div>
                       <div className="rec-actions">
@@ -439,11 +578,11 @@ export default function App() {
                 })}
               </ul>
             ) : (
-              <p className="empty-text">No live recommendations available yet.</p>
+              <p className="empty-text">No recommendations yet. Start an episode and refresh live data.</p>
             )}
           </article>
 
-          <article className="live-card">
+          <article className="ops-card">
             <h3>Recent Actions</h3>
             {liveDashboard?.action_history?.length ? (
               <ul className="history-list">
@@ -465,6 +604,11 @@ export default function App() {
             ) : (
               <p className="empty-text">No actions recorded yet.</p>
             )}
+          </article>
+
+          <article className="ops-card wide">
+            <h3>Resource Footprint Map</h3>
+            <ResourceMap counts={liveDashboard?.resource_counts} />
           </article>
         </div>
       </section>
