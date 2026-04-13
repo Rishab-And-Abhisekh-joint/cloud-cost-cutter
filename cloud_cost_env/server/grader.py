@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 
+SCORE_FLOOR = 0.01
+SCORE_CEIL = 0.99
+
+
 def clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
@@ -26,5 +30,6 @@ class Grader:
     @staticmethod
     def final_score(total_reward: float, max_possible_reward: float) -> float:
         if max_possible_reward <= 0:
-            return 0.0
-        return round(clamp(total_reward / max_possible_reward, 0.0, 1.0), 4)
+            return SCORE_FLOOR
+        normalized = total_reward / max_possible_reward
+        return round(clamp(normalized, SCORE_FLOOR, SCORE_CEIL), 4)

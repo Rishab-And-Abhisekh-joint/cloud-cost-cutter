@@ -27,6 +27,8 @@ ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://127.0.0.1:8000")
 RUN_SEED = os.getenv("RUN_SEED")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 ALLOW_HEURISTIC_FALLBACK = os.getenv("ALLOW_HEURISTIC_FALLBACK", "true").lower() == "true"
+SCORE_FLOOR = 0.01
+SCORE_CEIL = 0.99
 
 SYSTEM_PROMPT = textwrap.dedent(
     """
@@ -79,6 +81,10 @@ def log_end(success: bool, steps: int, score: float, rewards: list[float]) -> No
         f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}",
         flush=True,
     )
+
+
+def _clamp_task_score(value: float) -> float:
+    return max(SCORE_FLOOR, min(SCORE_CEIL, value))
 
 
 def _format_resources(obs: CloudCostObservation) -> str:
@@ -277,7 +283,7 @@ def run(client_override: OpenAI | None = None, model_override: str | None = None
                 log_step(step=fail_step, action="exception()", reward=0.0, done=True, error=str(exc))
 
             raw_score = sum(rewards)
-            score = max(0.0, min(1.0, raw_score))
+            score = _clamp_task_score(raw_score)
             success = (score >= 0.1) and not strict_failure and not task_failed
             log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 

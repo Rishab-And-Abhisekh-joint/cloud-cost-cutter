@@ -380,7 +380,7 @@ awk '
     if (match($0, /score=([0-9]+\.[0-9]{2})/, a) == 0) bad=1
     else {
       s=a[1]+0
-      if (s<0 || s>1) bad=1
+      if (s<=0 || s>=1) bad=1
     }
     c++
   }
@@ -392,12 +392,12 @@ awk '
 ' "$NORM_LOG_FILE"
 AWK_RC=$?
 if [ $AWK_RC -eq 0 ]; then
-  pass "END scores are in [0,1] and count is 3+"
+  pass "END scores are in (0,1) and count is 3+"
 elif [ $AWK_RC -eq 2 ]; then
   fail "Fewer than 3 END score records found"
   stop_at "Step 7"
 else
-  fail "Score range check failed (END scores must be in [0,1])"
+  fail "Score range check failed (END scores must be strictly in (0,1))"
   stop_at "Step 7"
 fi
 
