@@ -1,7 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
 
 const TASKS = ["cleanup", "rightsize", "full_optimization"];
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const DEFAULT_PROD_API_BASE_URL = "https://cloud-cost-env-api-production.up.railway.app";
+const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_REQUEST_TIMEOUT_MS || 15000);
+const REQUEST_RETRIES = Number(import.meta.env.VITE_REQUEST_RETRIES || 2);
+
+function resolveApiBaseUrl() {
+  const configured = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+  if (configured) {
+    return configured.replace(/\/+$/, "");
+  }
+
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://127.0.0.1:8000";
+  }
+
+  return DEFAULT_PROD_API_BASE_URL;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function fmtMoney(value) {
   return new Intl.NumberFormat("en-US", {
@@ -12,17 +33,65 @@ function fmtMoney(value) {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  const method = String(options.method || "GET").toUpperCase();
+  const canRetry = method === "GET" || method === "HEAD" || method === "OPTIONS";
+  let lastError = null;
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Request failed: ${response.status}`);
+  for (let attempt = 0; attempt <= REQUEST_RETRIES; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${path}`, {
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        ...options,
+        signal: controller.signal,
+      });
+
+      const text = await response.text();
+      let payload = null;
+
+      if (text) {
+        try {
+          payload = JSON.parse(text);
+        } catch {
+          payload = text;
+        }
+      }
+
+      if (!response.ok) {
+        const detail =
+          payload && typeof payload === "object"
+            ? payload.detail || JSON.stringify(payload)
+            : String(payload || `Request failed: ${response.status}`);
+        const error = new Error(detail);
+        error.status = response.status;
+        throw error;
+      }
+
+      return payload ?? {};
+    } catch (error) {
+      lastError = error;
+      const status = Number(error?.status || 0);
+      const isAbort = error?.name === "AbortError";
+      const retriable = canRetry && (isAbort || status === 429 || status >= 500 || status === 0);
+
+      if (retriable && attempt < REQUEST_RETRIES) {
+        await sleep((attempt + 1) * 350);
+        continue;
+      }
+
+      if (isAbort) {
+        throw new Error(`Request timed out after ${REQUEST_TIMEOUT_MS}ms`);
+      }
+
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
-  return response.json();
+  throw lastError || new Error("Request failed");
 }
 
 function StatCard({ label, value, helper }) {

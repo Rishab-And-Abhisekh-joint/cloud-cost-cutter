@@ -51,7 +51,7 @@ Observation space (typed model: `CloudCostObservation`):
 - `sla_violations`: SLA violations emitted for the latest step
 - `recommendations`: top ranked suggestions for next actions
 - `steps_remaining`: remaining episode budget
-- `current_score`: normalized score in `[0, 1]`
+- `current_score`: normalized score strictly within `(0, 1)`
 
 State space (typed model: `CloudCostState`) is available via `GET /state` and includes episode id, task name, step count, spend deltas, violations count, resources modified, max steps, and done flag.
 
@@ -128,6 +128,7 @@ Endpoints:
 - `GET /state`
 - `GET /profile`
 - `GET /health`
+- `GET /ready`
 - `GET /live/dashboard`
 - `POST /live/action`
 - `GET /azure/dashboard`
@@ -202,6 +203,15 @@ Required Railway environment variables:
 Optional backend environment variables:
 
 - `RUN_SEED`
+- `LOG_LEVEL`
+- `FORWARDED_ALLOW_IPS`
+- `UVICORN_WORKERS`
+- `RATE_LIMIT_WINDOW_SECONDS`
+- `RATE_LIMIT_RESET_PER_WINDOW`
+- `RATE_LIMIT_STEP_PER_WINDOW`
+- `RATE_LIMIT_LIVE_ACTION_PER_WINDOW`
+- `RATE_LIMIT_AZURE_APPROVAL_PER_WINDOW`
+- `RATE_LIMIT_AZURE_CONNECT_PER_WINDOW`
 
 Deploy flow:
 
@@ -297,6 +307,15 @@ Common optional parameters:
 - `RUN_SEED`
 - `ALLOWED_ORIGINS`
 - `LIVE_DASHBOARD_ALLOW_APPLY` (set `false` to force dry-run only)
+- `LOG_LEVEL` (default `INFO`)
+- `FORWARDED_ALLOW_IPS` (default `*`)
+- `UVICORN_WORKERS` (default `2` in Docker runtime)
+- `RATE_LIMIT_WINDOW_SECONDS` (default `60`)
+- `RATE_LIMIT_RESET_PER_WINDOW` (default `60`)
+- `RATE_LIMIT_STEP_PER_WINDOW` (default `180`)
+- `RATE_LIMIT_LIVE_ACTION_PER_WINDOW` (default `60`)
+- `RATE_LIMIT_AZURE_APPROVAL_PER_WINDOW` (default `30`)
+- `RATE_LIMIT_AZURE_CONNECT_PER_WINDOW` (default `6`)
 - `AWS_REGION` (display label for live dashboard)
 - `AWS_ACCOUNT_ID` and `AWS_ACCOUNT_ARN` (optional display metadata)
 - `AZURE_APPROVAL_WINDOW_SECONDS` (approval token lifetime for `/azure/connect`, default `600`)
@@ -314,6 +333,8 @@ LLM endpoint variable notes:
 Frontend parameter:
 
 - `VITE_API_BASE_URL` (set in Vercel project env vars)
+- `VITE_REQUEST_TIMEOUT_MS` (default `15000`)
+- `VITE_REQUEST_RETRIES` (default `2`, safe methods only)
 
 ## Reward
 
@@ -329,7 +350,7 @@ Reference baseline run (heuristic fallback, `MAX_STEPS=8`, production API):
 
 - `cleanup`: `score=0.70`, rewards=`0.22,0.22,0.22,0.02,0.02,0.01,0.00,0.00`
 - `rightsize`: `score=0.92`, rewards=`0.28,0.28,0.15,0.09,0.09,0.01,0.00,0.00`
-- `full_optimization`: `score=1.00`, rewards=`0.17,0.17,0.17,0.17,0.08,0.08,0.08,0.08`
+- `full_optimization`: `score=0.99`, rewards=`0.17,0.17,0.17,0.17,0.08,0.08,0.08,0.08`
 
 These scores are reproducible with deterministic task seeds and the same environment settings.
 
