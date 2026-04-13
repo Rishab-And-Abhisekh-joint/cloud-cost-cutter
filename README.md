@@ -98,6 +98,14 @@ python -m cloud_cost_env.rl.evaluate --policy cloud_cost_env/data/rl/q_policy_v1
 python -m cloud_cost_env.rl.evaluate_heuristic --episodes 120
 python -m cloud_cost_env.rl.evaluate_baseline --episodes 120
 
+# Enforce RL quality thresholds (fails with non-zero exit on regression)
+python -m cloud_cost_env.rl.quality_gate \
+	--policy cloud_cost_env/data/rl/q_policy_v1.json \
+	--episodes 180 \
+	--min-mean-reward 0.87 \
+	--min-mean-score 0.121 \
+	--min-success-rate 0.87
+
 # Run inference loop with RL policy
 set RL_POLICY_PATH=cloud_cost_env/data/rl/q_policy_v1.json
 python inference_rl.py
@@ -313,6 +321,7 @@ CI workflow file:
 
 What it does on every push to `main`:
 
+- Run RL quality regression gate before deployment and fail on threshold regressions (currently reward>=0.87, score>=0.121, success>=0.87)
 - Deploy backend to Railway using `railway up --ci`
 - Run a backend smoke test against `/health` and fail the workflow if it does not return `{"status":"ok"}`
 - Deploy frontend to Vercel when `VERCEL_TOKEN` is configured

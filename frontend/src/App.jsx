@@ -1,26 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
 
 const TASKS = ["cleanup", "rightsize", "full_optimization"];
 const DEFAULT_PROD_API_BASE_URL = "https://cloud-cost-env-api-production.up.railway.app";
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_REQUEST_TIMEOUT_MS || 15000);
 const REQUEST_RETRIES = Number(import.meta.env.VITE_REQUEST_RETRIES || 2);
-const PIE_COLORS = ["#2fc79e", "#ffb15f", "#64b1f4", "#f9838c", "#95d66f", "#9b8fff"];
+const LazyUseCaseRoutePage = lazy(() => import("./routes/UseCaseRoutePage"));
+const LazyRLStatusPage = lazy(() => import("./routes/RLStatusPage"));
 
 const TASK_META = {
   cleanup: {
@@ -206,72 +192,6 @@ function signalLabel(actionType) {
   return "Storage";
 }
 
-function buildResourcePie(profile) {
-  const resources = profile?.resources || {};
-  return [
-    { name: "Compute", value: Number(resources.compute || 0) },
-    { name: "Volumes", value: Number(resources.volumes || 0) },
-    { name: "Databases", value: Number(resources.databases || 0) },
-    { name: "Load Balancers", value: Number(resources.load_balancers || 0) },
-    { name: "Snapshots", value: Number(resources.snapshots || 0) },
-    { name: "Elastic IPs", value: Number(resources.elastic_ips || 0) },
-  ].filter((entry) => entry.value > 0);
-}
-
-function buildWastePie(profile) {
-  const waste = profile?.waste_signals || {};
-  return [
-    { name: "Idle Compute", value: Number(waste.idle_compute || 0) },
-    { name: "Orphaned Volumes", value: Number(waste.orphaned_volumes || 0) },
-    { name: "Unattached IPs", value: Number(waste.unattached_ips || 0) },
-    { name: "Empty LBs", value: Number(waste.empty_load_balancers || 0) },
-    { name: "Overprovisioned Compute", value: Number(waste.overprovisioned_compute || 0) },
-    { name: "Overprovisioned DB", value: Number(waste.overprovisioned_databases || 0) },
-  ].filter((entry) => entry.value > 0);
-}
-
-function buildCostBars(profile) {
-  const cost = profile?.cost || {};
-  const current = Number(cost.current_monthly_spend || 0);
-  const target = Number(cost.target_monthly_spend || 0);
-  const gap = Math.max(0, current - target);
-  const maxSavings = Number(cost.max_possible_savings_8_steps || 0);
-  return [
-    { name: "Current", value: current },
-    { name: "Target", value: target },
-    { name: "Gap", value: gap },
-    { name: "Max 8-Step", value: maxSavings },
-  ];
-}
-
-function buildHistoryTrend(actionHistory) {
-  const recent = (actionHistory || []).slice(-12);
-  let cumulative = 0;
-  return recent.map((entry, index) => {
-    const saving = Number(entry?.estimated_monthly_savings_usd || 0);
-    if (entry?.ok) {
-      cumulative += saving;
-    }
-    return {
-      step: `#${index + 1}`,
-      stepSavings: Number(entry?.ok ? saving : 0),
-      cumulativeSavings: Number(cumulative.toFixed(2)),
-    };
-  });
-}
-
-function buildRecommendationBars(recommendations) {
-  return (recommendations || [])
-    .slice()
-    .sort((a, b) => Number(b.estimated_monthly_savings_usd || 0) - Number(a.estimated_monthly_savings_usd || 0))
-    .slice(0, 8)
-    .map((rec) => ({
-      name: `${toTitleCase(signalLabel(rec.action_type))}`,
-      savings: Number(rec.estimated_monthly_savings_usd || 0),
-      resource: rec.resource_name,
-    }));
-}
-
 function ProfileCard({ title, profile }) {
   if (!profile) {
     return (
@@ -419,127 +339,6 @@ function SavingsTrend({ recommendations, actionHistory }) {
         })}
       </div>
     </div>
-  );
-}
-
-function ChartCard({ title, subtitle, children }) {
-  return (
-    <article className="chart-card">
-      <header className="chart-head">
-        <h3>{title}</h3>
-        {subtitle ? <p>{subtitle}</p> : null}
-      </header>
-      <div className="chart-body">{children}</div>
-    </article>
-  );
-}
-
-function NoChartData({ message }) {
-  return <p className="chart-empty">{message}</p>;
-}
-
-function UseCaseCharts({ profile, liveDashboard }) {
-  const resourcePie = useMemo(() => buildResourcePie(profile), [profile]);
-  const wastePie = useMemo(() => buildWastePie(profile), [profile]);
-  const costBars = useMemo(() => buildCostBars(profile), [profile]);
-  const historyTrend = useMemo(() => buildHistoryTrend(liveDashboard?.action_history), [liveDashboard?.action_history]);
-  const recommendationBars = useMemo(
-    () => buildRecommendationBars(liveDashboard?.recommendations),
-    [liveDashboard?.recommendations]
-  );
-
-  return (
-    <section className="charts-grid">
-      <ChartCard title="Resource Composition" subtitle="Pie chart by resource counts">
-        {resourcePie.length ? (
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie data={resourcePie} dataKey="value" nameKey="name" innerRadius={52} outerRadius={86} paddingAngle={2}>
-                {resourcePie.map((entry, index) => (
-                  <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        ) : (
-          <NoChartData message="No resource composition available yet." />
-        )}
-      </ChartCard>
-
-      <ChartCard title="Waste Signal Mix" subtitle="Pie chart of optimization opportunities">
-        {wastePie.length ? (
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie data={wastePie} dataKey="value" nameKey="name" innerRadius={52} outerRadius={86} paddingAngle={2}>
-                {wastePie.map((entry, index) => (
-                  <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        ) : (
-          <NoChartData message="No waste signals available yet." />
-        )}
-      </ChartCard>
-
-      <ChartCard title="Cost Envelope" subtitle="Current vs target and expected max savings">
-        {costBars.some((entry) => entry.value > 0) ? (
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={costBars}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(180, 210, 230, 0.18)" />
-              <XAxis dataKey="name" stroke="#9eb6c9" />
-              <YAxis stroke="#9eb6c9" />
-              <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
-              <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                {costBars.map((entry, index) => (
-                  <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <NoChartData message="Cost data appears after preview or episode start." />
-        )}
-      </ChartCard>
-
-      <ChartCard title="Action Savings Trend" subtitle="Recent live action savings progression">
-        {historyTrend.length ? (
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={historyTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(180, 210, 230, 0.18)" />
-              <XAxis dataKey="step" stroke="#9eb6c9" />
-              <YAxis stroke="#9eb6c9" />
-              <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
-              <Legend />
-              <Line type="monotone" dataKey="stepSavings" stroke="#ffb15f" strokeWidth={2.4} dot={false} />
-              <Line type="monotone" dataKey="cumulativeSavings" stroke="#2fc79e" strokeWidth={2.4} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <NoChartData message="No action trend yet. Run dry/apply actions in Live Operations." />
-        )}
-      </ChartCard>
-
-      <ChartCard title="Top Recommendation Savings" subtitle="Bar chart of highest monthly opportunities">
-        {recommendationBars.length ? (
-          <ResponsiveContainer width="100%" height={270}>
-            <BarChart data={recommendationBars} layout="vertical" margin={{ left: 24 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(180, 210, 230, 0.18)" />
-              <XAxis type="number" stroke="#9eb6c9" />
-              <YAxis dataKey="resource" type="category" width={120} stroke="#9eb6c9" />
-              <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
-              <Bar dataKey="savings" radius={[0, 8, 8, 0]} fill="#2fc79e" />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <NoChartData message="No recommendation bars available yet." />
-        )}
-      </ChartCard>
-    </section>
   );
 }
 
@@ -795,152 +594,6 @@ function OverviewPage({
       </section>
     </>
   );
-}
-
-function UseCasePage({
-  taskName,
-  seed,
-  loading,
-  previewProfile,
-  activeProfile,
-  liveDashboard,
-  onSeedChange,
-  onRefreshPreview,
-  onStartEpisode,
-  onRefreshLive,
-}) {
-  const scopedPreview = previewProfile?.task_name === taskName ? previewProfile : null;
-  const scopedActive = activeProfile?.task_name === taskName ? activeProfile : null;
-  const chosenProfile = scopedActive || scopedPreview;
-  const monthlySpend = Number(chosenProfile?.cost?.current_monthly_spend || 0);
-  const targetSpend = Number(chosenProfile?.cost?.target_monthly_spend || 0);
-  const maxSavings = Number(chosenProfile?.cost?.max_possible_savings_8_steps || 0);
-
-  return (
-    <>
-      <section className="page-intro">
-        <div>
-          <p className="eyebrow">Use Case · {toTitleCase(taskName)}</p>
-          <h2>{TASK_META[taskName].title}</h2>
-          <p>{TASK_META[taskName].description}</p>
-        </div>
-        <div className="page-intro-actions">
-          <div className="field-group compact">
-            <label htmlFor="seed-use-case">Seed</label>
-            <input id="seed-use-case" value={seed} onChange={(e) => onSeedChange(e.target.value)} />
-          </div>
-          <button type="button" onClick={onRefreshPreview} disabled={loading}>
-            Refresh Preview
-          </button>
-          <button type="button" className="solid" onClick={onStartEpisode} disabled={loading}>
-            Run Episode
-          </button>
-          <button type="button" onClick={() => onRefreshLive(true)}>
-            Refresh Live Data
-          </button>
-        </div>
-      </section>
-
-      <section className="kpi-grid">
-        <StatCard label="Use-Case Spend" value={fmtMoney(monthlySpend)} helper={`seed ${seed}`} />
-        <StatCard label="Target Spend" value={fmtMoney(targetSpend)} helper="profile target" />
-        <StatCard label="Gap" value={fmtMoney(Math.max(0, monthlySpend - targetSpend))} helper="current - target" />
-        <StatCard label="Max 8-Step Savings" value={fmtMoney(maxSavings)} helper="upper bound estimate" />
-      </section>
-
-      <UseCaseCharts profile={chosenProfile} liveDashboard={liveDashboard} />
-
-      <section className="profile-stack">
-        <ProfileCard title="Use-Case Preview" profile={scopedPreview} />
-        <ProfileCard title="Use-Case Active" profile={scopedActive} />
-      </section>
-    </>
-  );
-}
-
-function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }) {
-  const rlEnabled = Boolean(rlStatus?.rl_enabled);
-
-  return (
-    <section className="rl-shell">
-      <div className="page-intro">
-        <div>
-          <p className="eyebrow">Agent Runtime Check</p>
-          <h2>RL Runtime Status</h2>
-          <p>Transparent report of whether a real RL policy is active or the system is currently heuristic-driven.</p>
-        </div>
-        <div className="page-intro-actions">
-          <button type="button" onClick={() => onRefresh(true)} disabled={rlLoading}>
-            {rlLoading ? "Refreshing..." : "Refresh Status"}
-          </button>
-        </div>
-      </div>
-
-      {rlError ? <p className="error-text">{rlError}</p> : null}
-
-      <div className="rl-status-banner">
-        {rlEnabled ? (
-          <p className="status-note status-note-good">RL policy is active and loaded in runtime.</p>
-        ) : (
-          <p className="status-note status-note-warn">
-            RL policy is not active right now. Current decision flow is heuristic/action-engine based.
-          </p>
-        )}
-      </div>
-
-      <section className="rl-grid">
-        <article className="rl-card">
-          <p className="kpi-label">Control Mode</p>
-          <p className="kpi-value">{String(rlStatus?.control_mode || "unknown")}</p>
-          <p className="kpi-helper">Configured runtime mode reported by backend</p>
-        </article>
-        <article className="rl-card">
-          <p className="kpi-label">RL Enabled</p>
-          <p className="kpi-value">{rlEnabled ? "Yes" : "No"}</p>
-          <p className="kpi-helper">True only when mode=rl and policy artifact is loaded</p>
-        </article>
-        <article className="rl-card">
-          <p className="kpi-label">Policy Artifact</p>
-          <p className="kpi-value">{rlStatus?.rl_policy_loaded ? "Loaded" : "Not Loaded"}</p>
-          <p className="kpi-helper">Path: {rlStatus?.rl_policy_path || "not configured"}</p>
-        </article>
-        <article className="rl-card">
-          <p className="kpi-label">Decision Engine</p>
-          <p className="kpi-value">{rlStatus?.decision_engine || "unknown"}</p>
-          <p className="kpi-helper">Backend action execution engine currently in use</p>
-        </article>
-      </section>
-
-      <article className="ops-card wide rl-notes-card">
-        <h3>Backend Notes</h3>
-        {rlStatus?.notes?.length ? (
-          <ul className="rl-note-list">
-            {rlStatus.notes.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="empty-text">No runtime notes available.</p>
-        )}
-      </article>
-    </section>
-  );
-}
-
-function UseCaseRoute({ task, onTaskChange, ...pageProps }) {
-  const { taskName = "" } = useParams();
-
-  useEffect(() => {
-    if (TASKS.includes(taskName) && taskName !== task) {
-      onTaskChange(taskName);
-    }
-  }, [taskName, task, onTaskChange]);
-
-  if (!TASKS.includes(taskName)) {
-    return <Navigate to="/use-cases/full_optimization" replace />;
-  }
-
-  return <UseCasePage taskName={taskName} {...pageProps} />;
 }
 
 function AppShell() {
@@ -1211,30 +864,38 @@ function AppShell() {
           <Route
             path="/use-cases/:taskName"
             element={
-              <UseCaseRoute
-                task={task}
-                onTaskChange={handleTaskChange}
-                seed={seed}
-                loading={loading}
-                previewProfile={previewProfile}
-                activeProfile={activeProfile}
-                liveDashboard={liveDashboard}
-                onSeedChange={setSeed}
-                onRefreshPreview={() => refreshPreview(true)}
-                onStartEpisode={() => startEpisode(task, seed)}
-                onRefreshLive={refreshLiveDashboard}
-              />
+              <Suspense fallback={<p className="chart-empty">Loading use-case route...</p>}>
+                <LazyUseCaseRoutePage
+                  task={task}
+                  onTaskChange={handleTaskChange}
+                  tasks={TASKS}
+                  taskMeta={TASK_META}
+                  seed={seed}
+                  loading={loading}
+                  previewProfile={previewProfile}
+                  activeProfile={activeProfile}
+                  liveDashboard={liveDashboard}
+                  onSeedChange={setSeed}
+                  onRefreshPreview={() => refreshPreview(true)}
+                  onStartEpisode={() => startEpisode(task, seed)}
+                  onRefreshLive={refreshLiveDashboard}
+                  StatCard={StatCard}
+                  ProfileCard={ProfileCard}
+                />
+              </Suspense>
             }
           />
           <Route
             path="/rl-status"
             element={
-              <RLStatusPage
-                rlStatus={rlStatus}
-                rlLoading={rlLoading}
-                rlError={rlError}
-                onRefresh={refreshAgentStatus}
-              />
+              <Suspense fallback={<p className="chart-empty">Loading RL status...</p>}>
+                <LazyRLStatusPage
+                  rlStatus={rlStatus}
+                  rlLoading={rlLoading}
+                  rlError={rlError}
+                  onRefresh={refreshAgentStatus}
+                />
+              </Suspense>
             }
           />
           <Route path="*" element={<Navigate to="/overview" replace />} />
