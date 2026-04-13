@@ -130,6 +130,9 @@ Endpoints:
 - `GET /health`
 - `GET /live/dashboard`
 - `POST /live/action`
+- `GET /azure/dashboard`
+- `GET /azure/approval`
+- `POST /azure/connect`
 
 Profile endpoint usage:
 
@@ -156,6 +159,28 @@ curl -X POST http://127.0.0.1:8000/live/action \
 curl -X POST http://127.0.0.1:8000/live/action \
 	-H "Content-Type: application/json" \
 	-d '{"action_type":"release_eip","resource_id":"eip-123","apply":true}'
+```
+
+Azure secure connect usage (requires explicit approval token):
+
+```bash
+# 1) Ask server for one-time approval token (short-lived)
+curl http://127.0.0.1:8000/azure/approval
+
+# 2) Connect using approved=true and the returned token
+curl -X POST http://127.0.0.1:8000/azure/connect \
+	-H "Content-Type: application/json" \
+	-d '{
+	  "approved": true,
+	  "approval_token": "<token-from-previous-call>",
+	  "subscription_id": "<azure-subscription-guid>",
+	  "resource_group": null,
+	  "tenant_id": null,
+	  "max_resources": 200
+	}'
+
+# 3) Read latest cached Azure dashboard snapshot
+curl http://127.0.0.1:8000/azure/dashboard
 ```
 
 ## Production Deployment (Railway + Vercel)
@@ -274,6 +299,7 @@ Common optional parameters:
 - `LIVE_DASHBOARD_ALLOW_APPLY` (set `false` to force dry-run only)
 - `AWS_REGION` (display label for live dashboard)
 - `AWS_ACCOUNT_ID` and `AWS_ACCOUNT_ARN` (optional display metadata)
+- `AZURE_APPROVAL_WINDOW_SECONDS` (approval token lifetime for `/azure/connect`, default `600`)
 - `ALLOW_HEURISTIC_FALLBACK`
 - `STRICT_ACTION_MODE`
 - `MAX_STEPS`

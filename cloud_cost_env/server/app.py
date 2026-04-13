@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import os
+import secrets
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -10,6 +11,9 @@ import uvicorn
 from cloud_cost_env.models import (
     CloudCostAction,
     CloudCostState,
+    AzureApprovalChallenge,
+    AzureConnectRequest,
+    AzureConnectionDashboard,
     LiveActionRequest,
     LiveActionResult,
     LiveAwsDashboard,
@@ -18,6 +22,7 @@ from cloud_cost_env.models import (
     StepResult,
 )
 from cloud_cost_env.server.environment import CloudCostEnvironment
+from cloud_cost_env.server.azure_live import AzureLiveConnector
 from cloud_cost_env.server.web_tester import TESTER_HTML
 
 
@@ -31,9 +36,18 @@ def _parse_allowed_origins() -> list[str]:
 def create_fastapi_app() -> FastAPI:
     app = FastAPI(title="CloudCostEnv", version="0.1.0")
     env = CloudCostEnvironment(max_steps=8)
+    azure_connector = AzureLiveConnector()
     allowed_origins = _parse_allowed_origins()
     live_action_history: list[LiveActionResult] = []
     live_allow_apply = os.getenv("LIVE_DASHBOARD_ALLOW_APPLY", "true").lower() == "true"
+    azure_approval_token: str | None = None
+    azure_approval_expires_at: datetime | None = None
+    azure_approval_window = max(60, int(os.getenv("AZURE_APPROVAL_WINDOW_SECONDS", "600")))
+    azure_dashboard_state = AzureConnectionDashboard(
+        connected=False,
+        notes=["Not connected. Request approval and connect to Azure to load live resources."],
+        updated_at=datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+    )
 
     app.add_middleware(
         CORSMiddleware,
@@ -128,6 +142,13 @@ def create_fastapi_app() -> FastAPI:
         live_action_history.append(result)
         del live_action_history[:-20]
         return result
+
+    def _empty_azure_dashboard(note: str) -> AzureConnectionDashboard:
+        return AzureConnectionDashboard(
+            connected=False,
+            notes=[note],
+            updated_at=_now_iso(),
+        )
 
     @app.get("/")
     def root() -> dict[str, str]:
@@ -299,6 +320,49 @@ def create_fastapi_app() -> FastAPI:
             )
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/azure/dashboard", response_model=AzureConnectionDashboard)
+    def azure_dashboard():
+        return azure_dashboard_state
+
+    @app.get("/azure/approval", response_model=AzureApprovalChallenge)
+    def azure_approval() -> AzureApprovalChallenge:
+        nonlocal azure_approval_token, azure_approval_expires_at
+        azure_approval_token = secrets.token_urlsafe(24)
+        azure_approval_expires_at = datetime.now(timezone.utc) + timedelta(seconds=azure_approval_window)
+        return AzureApprovalChallenge(
+            token=azure_approval_token,
+            expires_at=azure_approval_expires_at.replace(microsecond=0).isoformat(),
+            message="Approval token issued. Pass this token to /azure/connect with approved=true.",
+        )
+
+    @app.post("/azure/connect", response_model=AzureConnectionDashboard)
+    def azure_connect(payload: AzureConnectRequest) -> AzureConnectionDashboard:
+        nonlocal azure_approval_token, azure_approval_expires_at, azure_dashboard_state
+
+        if not payload.approved:
+            raise HTTPException(status_code=400, detail="approved=true is required to connect")
+
+        if not azure_approval_token or not azure_approval_expires_at:
+            raise HTTPException(status_code=400, detail="No approval token issued. Call GET /azure/approval first.")
+
+        if payload.approval_token != azure_approval_token:
+            raise HTTPException(status_code=400, detail="Invalid approval token")
+
+        if datetime.now(timezone.utc) > azure_approval_expires_at:
+            azure_approval_token = None
+            azure_approval_expires_at = None
+            raise HTTPException(status_code=400, detail="Approval token expired. Request a new one.")
+
+        azure_approval_token = None
+        azure_approval_expires_at = None
+
+        try:
+            azure_dashboard_state = azure_connector.connect(payload)
+            return azure_dashboard_state
+        except Exception as exc:
+            azure_dashboard_state = _empty_azure_dashboard(f"Azure connection failed: {str(exc)}")
+            raise HTTPException(status_code=400, detail=f"Azure connection failed: {str(exc)}") from exc
 
     return app
 

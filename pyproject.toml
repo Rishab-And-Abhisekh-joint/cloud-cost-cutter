@@ -18,6 +18,8 @@ dependencies = [
     "pydantic>=2.7,<3",
     "httpx>=0.27,<1",
     "openai>=2.7.2,<3",
+    "azure-identity>=1.21.0,<2",
+    "azure-mgmt-resource>=23.2.0,<24",
 ]
 
 [project.scripts]

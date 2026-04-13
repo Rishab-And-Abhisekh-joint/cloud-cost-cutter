@@ -176,3 +176,46 @@ class LiveActionRequest(BaseModel):
     action_type: Literal["stop_instance", "release_eip", "delete_snapshot", "delete_volume"]
     resource_id: str
     apply: bool = False
+
+
+class AzureApprovalChallenge(BaseModel):
+    token: str
+    expires_at: str
+    message: str
+
+
+class AzureConnectRequest(BaseModel):
+    approved: bool = False
+    approval_token: str
+    subscription_id: str
+    resource_group: str | None = None
+    tenant_id: str | None = None
+    max_resources: int = Field(default=200, ge=10, le=1000)
+
+
+class AzureRecommendation(BaseModel):
+    title: str
+    severity: Literal["low", "medium", "high"] = "medium"
+    reason: str
+    action: str
+
+
+class AzureResourceSample(BaseModel):
+    name: str
+    resource_id: str
+    resource_type: str
+    location: str | None = None
+    resource_group: str | None = None
+
+
+class AzureConnectionDashboard(BaseModel):
+    connected: bool
+    subscription_id: str | None = None
+    tenant_id: str | None = None
+    resource_group: str | None = None
+    sampled_resources: int = 0
+    resource_type_counts: dict[str, int] = Field(default_factory=dict)
+    sample_resources: list[AzureResourceSample] = Field(default_factory=list)
+    recommendations: list[AzureRecommendation] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+    updated_at: str
