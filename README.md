@@ -83,6 +83,29 @@ Naming map:
 - `inference.py` (repo root): OpenEnv submission entrypoint
 - `cloud_cost_env/baseline_runner.py`: deterministic baseline policy loop
 - `cloud_cost_env/inference_llm.py`: LLM-driven policy loop
+- `cloud_cost_env/inference_rl.py`: RL policy loop backed by artifact scoring
+
+Train and evaluate RL policy artifacts:
+
+```bash
+# Train a tabular RL artifact and store versioned policy JSON
+python -m cloud_cost_env.rl.train --episodes 1200 --output cloud_cost_env/data/rl/q_policy_v1.json
+
+# Evaluate a trained artifact
+python -m cloud_cost_env.rl.evaluate --policy cloud_cost_env/data/rl/q_policy_v1.json --episodes 120
+
+# Run inference loop with RL policy
+set RL_POLICY_PATH=cloud_cost_env/data/rl/q_policy_v1.json
+python inference_rl.py
+```
+
+Enable RL runtime in API server:
+
+```bash
+set AGENT_CONTROL_MODE=rl
+set RL_POLICY_PATH=cloud_cost_env/data/rl/q_policy_v1.json
+uvicorn cloud_cost_env.server.app:app --host 127.0.0.1 --port 8000
+```
 
 LLM runner (separate from baseline):
 
@@ -129,6 +152,8 @@ Endpoints:
 - `GET /profile`
 - `GET /health`
 - `GET /ready`
+- `GET /agent/status`
+- `GET /agent/next-action`
 - `GET /live/dashboard`
 - `POST /live/action`
 - `GET /azure/dashboard`
@@ -160,6 +185,19 @@ curl -X POST http://127.0.0.1:8000/live/action \
 curl -X POST http://127.0.0.1:8000/live/action \
 	-H "Content-Type: application/json" \
 	-d '{"action_type":"release_eip","resource_id":"eip-123","apply":true}'
+```
+
+Agent runtime status usage:
+
+```bash
+# Returns whether RL is truly active (mode + artifact load + runtime validation)
+curl http://127.0.0.1:8000/agent/status
+
+# Force policy reload + revalidation
+curl "http://127.0.0.1:8000/agent/status?refresh=true"
+
+# Inspect next action from active control mode (rl or heuristic)
+curl "http://127.0.0.1:8000/agent/next-action?task_name=full_optimization&seed=777"
 ```
 
 Azure secure connect usage (requires explicit approval token):

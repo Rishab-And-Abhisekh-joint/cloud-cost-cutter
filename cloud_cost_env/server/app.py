@@ -13,6 +13,7 @@ import uvicorn
 
 from cloud_cost_env.models import (
     CloudCostAction,
+    CloudCostObservation,
     CloudCostState,
     AzureApprovalChallenge,
     AzureConnectRequest,
@@ -23,6 +24,13 @@ from cloud_cost_env.models import (
     LiveRecommendation,
     ResourceSummary,
     StepResult,
+)
+from cloud_cost_env.rl.policy import (
+    DEFAULT_RL_POLICY_PATH,
+    QTablePolicy,
+    build_action_candidates,
+    candidate_to_cloud_action,
+    observation_state_key,
 )
 from cloud_cost_env.server.environment import CloudCostEnvironment
 from cloud_cost_env.server.azure_live import AzureLiveConnector
@@ -54,6 +62,13 @@ def create_fastapi_app() -> FastAPI:
     azure_connector = AzureLiveConnector()
     logger.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
     allowed_origins = _parse_allowed_origins()
+    agent_control_mode = os.getenv("AGENT_CONTROL_MODE", "heuristic").strip().lower() or "heuristic"
+    configured_policy_path = os.getenv("RL_POLICY_PATH", str(DEFAULT_RL_POLICY_PATH)).strip()
+    resolved_policy_path = configured_policy_path or str(DEFAULT_RL_POLICY_PATH)
+    rl_policy = QTablePolicy(resolved_policy_path)
+    rl_policy_inference_ok = False
+    rl_validation_error: str | None = None
+    rl_last_validated_at: str | None = None
     live_action_history: list[LiveActionResult] = []
     live_allow_apply = os.getenv("LIVE_DASHBOARD_ALLOW_APPLY", "true").lower() == "true"
     rate_limit_window_seconds = _parse_int_env("RATE_LIMIT_WINDOW_SECONDS", 60, minimum=10, maximum=600)
@@ -102,64 +117,80 @@ def create_fastapi_app() -> FastAPI:
             return round(summary.monthly_cost * 0.8, 2)
         return round(summary.monthly_cost, 2)
 
-    def _map_recommendation(summary: ResourceSummary) -> LiveRecommendation | None:
-        action_type: str | None = None
-        reason: str | None = None
-
-        if summary.resource_type == "elastic_ip" and summary.status == "unattached":
-            action_type = "release_eip"
-            reason = "Unattached Elastic IP can be released immediately"
-        elif summary.resource_type == "snapshot" and summary.status.startswith("age:"):
-            try:
-                age_days = int(summary.status.split(":", 1)[1])
-            except ValueError:
-                age_days = 0
-            if age_days > 90:
-                action_type = "delete_snapshot"
-                reason = f"Old snapshot age {age_days} days"
-        elif summary.resource_type == "volume" and summary.status == "orphaned":
-            action_type = "delete_volume"
-            reason = "Orphaned volume has no active attachment"
-        elif summary.resource_type == "compute" and summary.status == "running" and summary.waste_signal >= 0.65:
-            action_type = "stop_instance"
-            reason = "Running instance appears underutilized"
-
-        if not action_type or not reason:
-            return None
-
+    def _candidate_to_live_recommendation(candidate) -> LiveRecommendation:
         return LiveRecommendation(
-            action_type=action_type,
-            resource_id=summary.resource_id,
-            resource_name=summary.resource_id,
-            reason=reason,
-            risk=summary.risk,
-            estimated_monthly_savings_usd=_estimate_savings(summary, action_type),
+            action_type=candidate.action_type,
+            resource_id=candidate.resource_id,
+            resource_name=candidate.resource_name,
+            reason=candidate.reason,
+            risk=candidate.risk,
+            estimated_monthly_savings_usd=candidate.estimated_monthly_savings_usd,
         )
 
-    def _build_live_recommendations(summaries: list[ResourceSummary]) -> list[LiveRecommendation]:
-        ranked = sorted(
-            summaries,
-            key=lambda s: (s.waste_signal * s.monthly_cost, s.monthly_cost),
+    def _heuristic_rank(candidates):
+        return sorted(
+            candidates,
+            key=lambda cand: (
+                cand.waste_signal * cand.estimated_monthly_savings_usd,
+                cand.estimated_monthly_savings_usd,
+            ),
             reverse=True,
         )
 
+    def _validate_rl_runtime(force: bool = False) -> bool:
+        nonlocal rl_policy_inference_ok, rl_validation_error, rl_last_validated_at
+
+        if not force and rl_last_validated_at is not None:
+            return rl_policy_inference_ok
+
+        rl_last_validated_at = _now_iso()
+
+        if agent_control_mode != "rl":
+            rl_policy_inference_ok = False
+            rl_validation_error = "AGENT_CONTROL_MODE is not 'rl'"
+            return False
+
+        if not rl_policy.loaded:
+            rl_policy_inference_ok = False
+            rl_validation_error = rl_policy.error or "RL policy could not be loaded"
+            return False
+
+        try:
+            probe_env = CloudCostEnvironment(max_steps=8)
+            probe_obs = probe_env.reset("cleanup", seed=42)
+            probe_candidates = build_action_candidates(probe_obs.resources_summary)
+            selected = rl_policy.select_candidate(probe_obs, probe_candidates)
+            if selected is None:
+                raise RuntimeError("Policy did not select any candidate action")
+            CloudCostAction.model_validate(selected.to_cloud_action().model_dump())
+        except Exception as exc:
+            rl_policy_inference_ok = False
+            rl_validation_error = str(exc)
+            return False
+
+        rl_policy_inference_ok = True
+        rl_validation_error = None
+        return True
+
+    def _build_live_recommendations(observation: CloudCostObservation) -> list[LiveRecommendation]:
+        candidates = build_action_candidates(observation.resources_summary)
+        if not candidates:
+            return []
+
+        if agent_control_mode == "rl" and _validate_rl_runtime(force=False):
+            ranked = rl_policy.rank_candidates(observation, candidates)
+        else:
+            ranked = _heuristic_rank(candidates)
+
         recs: list[LiveRecommendation] = []
-        for summary in ranked:
-            mapped = _map_recommendation(summary)
-            if mapped:
-                recs.append(mapped)
+        for candidate in ranked:
+            recs.append(_candidate_to_live_recommendation(candidate))
             if len(recs) >= 8:
                 break
         return recs
 
     def _to_cloud_action(req: LiveActionRequest) -> CloudCostAction:
-        if req.action_type == "stop_instance":
-            return CloudCostAction(command="stop", resource_id=req.resource_id, params={})
-        if req.action_type == "release_eip":
-            return CloudCostAction(command="detach_ip", resource_id=req.resource_id, params={})
-        if req.action_type == "delete_snapshot":
-            return CloudCostAction(command="delete_snapshot", resource_id=req.resource_id, params={})
-        return CloudCostAction(command="terminate", resource_id=req.resource_id, params={})
+        return candidate_to_cloud_action(req.action_type, req.resource_id)
 
     def _record_live_action(result: LiveActionResult) -> LiveActionResult:
         live_action_history.append(result)
@@ -198,6 +229,8 @@ def create_fastapi_app() -> FastAPI:
             raise HTTPException(status_code=429, detail=f"Rate limit exceeded for {bucket}. Please retry later.")
 
         history.append(now)
+
+    _validate_rl_runtime(force=True)
 
     @app.middleware("http")
     async def operational_middleware(request: Request, call_next):
@@ -283,27 +316,86 @@ def create_fastapi_app() -> FastAPI:
         }
 
     @app.get("/agent/status")
-    def agent_status() -> dict[str, object]:
-        control_mode = os.getenv("AGENT_CONTROL_MODE", "heuristic").strip().lower() or "heuristic"
-        rl_policy_path = os.getenv("RL_POLICY_PATH", "").strip()
-        rl_policy_loaded = bool(rl_policy_path) and os.path.exists(rl_policy_path)
-        rl_enabled = control_mode == "rl" and rl_policy_loaded
+    def agent_status(refresh: bool = False) -> dict[str, object]:
+        if refresh:
+            rl_policy.reload()
+            _validate_rl_runtime(force=True)
+        else:
+            _validate_rl_runtime(force=False)
 
+        rl_enabled = agent_control_mode == "rl" and rl_policy.loaded and rl_policy_inference_ok
         notes = [
-            "Environment stepping is driven by ActionEngine command execution and Grader reward shaping.",
-            "Recommendation ranking is heuristic (waste_signal and monthly cost based), not model-trained.",
-            "Set AGENT_CONTROL_MODE=rl and provide a valid RL_POLICY_PATH to enable a real RL policy runtime.",
+            "Environment stepping executes through ActionEngine command application and Grader reward shaping.",
+            "RL enabled is true only when control mode is rl, artifact is loaded, and runtime inference validation passes.",
+            "Use /agent/next-action to inspect the immediate action suggested by the currently active control mode.",
         ]
 
+        if not rl_enabled:
+            notes.append("Current runtime is not using RL for control. Fallback behavior is heuristic ranking.")
+
+        snapshot = rl_policy.status_snapshot()
+
         return {
-            "control_mode": control_mode,
+            "control_mode": agent_control_mode,
             "rl_enabled": rl_enabled,
-            "rl_policy_loaded": rl_policy_loaded,
-            "rl_policy_path": rl_policy_path or None,
-            "decision_engine": "ActionEngine + Grader",
-            "recommendation_engine": "Heuristic RecommendationEngine",
+            "rl_policy_loaded": rl_policy.loaded,
+            "rl_policy_validated": rl_policy_inference_ok,
+            "rl_policy_path": snapshot.get("artifact_path"),
+            "rl_policy_version": snapshot.get("version") or None,
+            "rl_policy_created_at": snapshot.get("created_at") or None,
+            "rl_last_validated_at": rl_last_validated_at,
+            "rl_validation_error": rl_validation_error,
+            "decision_engine": "RLPolicy + ActionEngine" if rl_enabled else "ActionEngine + Grader",
+            "recommendation_engine": "RL-ranked candidates" if rl_enabled else "Heuristic candidate ranking",
+            "policy_state_count": snapshot.get("state_count", 0),
+            "training": snapshot.get("training", {}),
+            "metrics": snapshot.get("metrics", {}),
             "notes": notes,
         }
+
+    @app.get("/agent/next-action")
+    def agent_next_action(task_name: str = "full_optimization", seed: int | None = None) -> dict[str, object]:
+        try:
+            _ensure_live_env(task_name=task_name, seed=seed)
+            obs = env.get_observation_snapshot()
+            candidates = build_action_candidates(obs.resources_summary)
+
+            source = "heuristic"
+            selected = None
+
+            if agent_control_mode == "rl" and _validate_rl_runtime(force=False):
+                source = "rl"
+                selected = rl_policy.select_candidate(obs, candidates)
+            elif candidates:
+                selected = _heuristic_rank(candidates)[0]
+
+            if selected is None:
+                return {
+                    "source": source,
+                    "task_name": task_name,
+                    "state_key": observation_state_key(obs),
+                    "candidate_count": len(candidates),
+                    "cloud_action": CloudCostAction(command="skip", resource_id="", params={}).model_dump(),
+                    "updated_at": _now_iso(),
+                }
+
+            return {
+                "source": source,
+                "task_name": task_name,
+                "state_key": observation_state_key(obs),
+                "candidate_count": len(candidates),
+                "action_type": selected.action_type,
+                "action_key": selected.action_key,
+                "resource_id": selected.resource_id,
+                "resource_name": selected.resource_name,
+                "risk": selected.risk,
+                "reason": selected.reason,
+                "estimated_monthly_savings_usd": selected.estimated_monthly_savings_usd,
+                "cloud_action": selected.to_cloud_action().model_dump(),
+                "updated_at": _now_iso(),
+            }
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.post("/reset/{task_name}")
     def reset(task_name: str, request: Request, seed: int | None = None):
@@ -377,7 +469,7 @@ def create_fastapi_app() -> FastAPI:
         try:
             _ensure_live_env(task_name=task_name, seed=seed)
             obs = env.get_observation_snapshot()
-            recs = _build_live_recommendations(obs.resources_summary)
+            recs = _build_live_recommendations(obs)
             estimated_mtd = round(obs.total_monthly_cost * (datetime.now(timezone.utc).day / 30.0), 2)
 
             return LiveAwsDashboard(

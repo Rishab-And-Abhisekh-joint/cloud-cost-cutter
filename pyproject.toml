@@ -26,6 +26,9 @@ dependencies = [
 server = "cloud_cost_env.server.app:main"
 inference-baseline = "cloud_cost_env.baseline_runner:run"
 inference-llm = "cloud_cost_env.inference_llm:run"
+inference-rl = "cloud_cost_env.inference_rl:run"
+train-rl-policy = "cloud_cost_env.rl.train:main"
+eval-rl-policy = "cloud_cost_env.rl.evaluate:main"
 
 [tool.setuptools.packages.find]
 include = ["cloud_cost_env*"]
