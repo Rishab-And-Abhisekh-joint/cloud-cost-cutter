@@ -282,6 +282,29 @@ def create_fastapi_app() -> FastAPI:
             "allowed_origins_count": len(allowed_origins),
         }
 
+    @app.get("/agent/status")
+    def agent_status() -> dict[str, object]:
+        control_mode = os.getenv("AGENT_CONTROL_MODE", "heuristic").strip().lower() or "heuristic"
+        rl_policy_path = os.getenv("RL_POLICY_PATH", "").strip()
+        rl_policy_loaded = bool(rl_policy_path) and os.path.exists(rl_policy_path)
+        rl_enabled = control_mode == "rl" and rl_policy_loaded
+
+        notes = [
+            "Environment stepping is driven by ActionEngine command execution and Grader reward shaping.",
+            "Recommendation ranking is heuristic (waste_signal and monthly cost based), not model-trained.",
+            "Set AGENT_CONTROL_MODE=rl and provide a valid RL_POLICY_PATH to enable a real RL policy runtime.",
+        ]
+
+        return {
+            "control_mode": control_mode,
+            "rl_enabled": rl_enabled,
+            "rl_policy_loaded": rl_policy_loaded,
+            "rl_policy_path": rl_policy_path or None,
+            "decision_engine": "ActionEngine + Grader",
+            "recommendation_engine": "Heuristic RecommendationEngine",
+            "notes": notes,
+        }
+
     @app.post("/reset/{task_name}")
     def reset(task_name: str, request: Request, seed: int | None = None):
         _enforce_rate_limit(request, "reset", rate_limit_reset_per_window)
