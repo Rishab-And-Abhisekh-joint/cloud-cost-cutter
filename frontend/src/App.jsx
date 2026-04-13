@@ -259,6 +259,46 @@ function ResourceMap({ counts }) {
   );
 }
 
+function SavingsTrend({ recommendations, actionHistory }) {
+  const ranked = (recommendations || [])
+    .slice()
+    .sort((a, b) => Number(b.estimated_monthly_savings_usd || 0) - Number(a.estimated_monthly_savings_usd || 0))
+    .slice(0, 6);
+
+  if (!ranked.length) {
+    return <p className="empty-text">Savings spectrum appears once live recommendations are available.</p>;
+  }
+
+  const maxSavings = Math.max(1, Number(ranked[0]?.estimated_monthly_savings_usd || 1));
+  const executedCount = (actionHistory || []).filter((item) => !item?.dry_run && item?.ok).length;
+
+  return (
+    <div className="savings-trend">
+      <p className="trend-note">
+        Showing top {ranked.length} opportunities · {executedCount} applied successfully this run
+      </p>
+
+      <div className="trend-list" role="list" aria-label="Top savings opportunities">
+        {ranked.map((entry, index) => {
+          const savings = Number(entry.estimated_monthly_savings_usd || 0);
+          const width = Math.max(8, (savings / maxSavings) * 100);
+          return (
+            <div className="trend-row" role="listitem" key={`${entry.action_type}:${entry.resource_id}`}>
+              <div className="trend-meta">
+                <p>{recLabel(entry.action_type)}</p>
+                <strong>{fmtMoney(savings)}</strong>
+              </div>
+              <div className="trend-track">
+                <div className="trend-bar" style={{ width: `${width}%`, animationDelay: `${index * 70}ms` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [seed, setSeed] = useState("777");
   const [task, setTask] = useState("full_optimization");
@@ -539,6 +579,14 @@ export default function App() {
 
         <div className="ops-grid">
           <article className="ops-card">
+            <h3>Savings Opportunity Spectrum</h3>
+            <SavingsTrend
+              recommendations={liveDashboard?.recommendations}
+              actionHistory={liveDashboard?.action_history}
+            />
+          </article>
+
+          <article className="ops-card">
             <h3>Prioritized Recommendations</h3>
             {liveDashboard?.recommendations?.length ? (
               <ul className="rec-list">
@@ -552,8 +600,11 @@ export default function App() {
                         <p className="rec-title">{recLabel(rec.action_type)} · {rec.resource_name}</p>
                         <p className="rec-badge">{signalLabel(rec.action_type)}</p>
                         <p className="rec-meta">{rec.reason}</p>
-                        <p className="rec-meta">
-                          Risk {rec.risk} · Est. savings {fmtMoney(rec.estimated_monthly_savings_usd)}
+                        <p className="rec-meta rec-metrics">
+                          <span className={`risk-chip risk-${String(rec.risk || "low").toLowerCase()}`}>
+                            Risk {rec.risk}
+                          </span>
+                          <span>Est. savings {fmtMoney(rec.estimated_monthly_savings_usd)}</span>
                         </p>
                       </div>
                       <div className="rec-actions">
@@ -594,8 +645,12 @@ export default function App() {
                       <p>
                         <strong>{recLabel(event.action_type)}</strong> on {event.resource_id}
                       </p>
-                      <p>
-                        {event.dry_run ? "Dry run" : "Executed"} | {event.ok ? "ok" : "failed"} | savings {fmtMoney(event.estimated_monthly_savings_usd)}
+                      <p className="history-meta-line">
+                        <span className={`history-chip ${event.ok ? "history-chip-ok" : "history-chip-fail"}`}>
+                          {event.ok ? "ok" : "failed"}
+                        </span>
+                        <span>{event.dry_run ? "Dry run" : "Executed"}</span>
+                        <span>savings {fmtMoney(event.estimated_monthly_savings_usd)}</span>
                       </p>
                       <p>{event.message}</p>
                     </li>
