@@ -1140,14 +1140,16 @@ function ResourceInventoryPage({ task, seed }) {
     </div>
   );
 
-  const totalCost = filteredRows.reduce((sum, r) => sum + r.monthly_cost, 0);
+  const totalCost = rows.reduce((sum, r) => sum + r.monthly_cost, 0);
+  const filteredCost = filteredRows.reduce((sum, r) => sum + r.monthly_cost, 0);
+  const hasFilters = filters.type || filters.status || search;
 
   return (
     <>
       <div className="page-header">
         <div>
           <h2 className="page-title">Resource Inventory</h2>
-          <p className="page-subtitle">{rows.length} resources · {fmtMoney(totalCost)} monthly spend</p>
+          <p className="page-subtitle">{hasFilters ? `${filteredRows.length} of ${rows.length} resources · ${fmtMoney(filteredCost)} of ${fmtMoney(totalCost)}` : `${rows.length} resources · ${fmtMoney(totalCost)} monthly spend`}</p>
         </div>
       </div>
 
