@@ -1282,10 +1282,10 @@ function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, 
       {liveMessage && <p className="success-text">{liveMessage}</p>}
 
       <div className="ac-summary-bar">
-        <MetricCard label="Total Waste Detected" value={fmtMoney(totalWaste)} sublabel="potential monthly savings" variant="warning" />
-        <MetricCard label="Actions Pending" value={totalPending} sublabel={`of ${recommendations.length} recommendations`} variant="info" />
-        <MetricCard label="Actions Applied" value={totalApplied} sublabel={fmtMoney(totalSavingsApplied) + " saved"} variant="success" />
-        <MetricCard label="Waste Signals" value={wasteSignals.length} sublabel="resources with savings" variant="neutral" />
+        <MetricCard label="Total Waste Detected" value={fmtMoney(totalWaste)} helper="potential monthly savings" />
+        <MetricCard label="Actions Pending" value={totalPending} helper={`of ${recommendations.length} recommendations`} />
+        <MetricCard label="Actions Applied" value={totalApplied} helper={fmtMoney(totalSavingsApplied) + " saved"} />
+        <MetricCard label="Waste Signals" value={wasteSignals.length} helper="resources with savings" />
       </div>
 
       <div className="ac-panels">
