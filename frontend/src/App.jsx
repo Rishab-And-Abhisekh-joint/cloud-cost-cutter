@@ -1,5 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState, useCallback } from "react";
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate, useLocation } from "react-router-dom";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { MetricCard, SectionCard, RiskBadge } from "./components/shared";
 
 const TASKS = ["cleanup", "rightsize", "full_optimization"];
 const DEFAULT_PROD_API_BASE_URL = "https://cloud-cost-env-api-production.up.railway.app";
@@ -513,6 +515,159 @@ function SavingsTrend({ recommendations, actionHistory }) {
   );
 }
 
+function useThemeColors() {
+  const isDark = typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "dark";
+  return {
+    grid: isDark ? "#252836" : "#e2e5e9",
+    axis: isDark ? "#64748b" : "#94a3b8",
+    tooltipBg: isDark ? "#171a24" : "#ffffff",
+    tooltipBorder: isDark ? "#252836" : "#e2e5e9",
+    text: isDark ? "#f1f5f9" : "#0f172a",
+  };
+}
+
+function ChartTooltip({ active, payload, label, formatter }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: "var(--tooltip-bg)", border: "1px solid var(--tooltip-border)", borderRadius: 8, padding: "8px 12px", boxShadow: "var(--shadow-hover)", fontSize: "0.8rem" }}>
+      {label != null && <p style={{ margin: "0 0 4px", fontSize: "0.7rem", color: "var(--text-muted)" }}>{label}</p>}
+      {payload.map((entry, i) => (
+        <p key={i} style={{ margin: 0, color: entry.color || "var(--text-primary)", fontWeight: 600 }}>
+          {entry.name}: {formatter ? formatter(entry.value) : entry.value}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function WasteSeverityDonut({ wasteSignals }) {
+  const ws = wasteSignals || {};
+  const idle = Number(ws.idle_compute || 0);
+  const orphaned = Number(ws.orphaned_volumes || 0);
+  const overComp = Number(ws.overprovisioned_compute || 0);
+  const overDb = Number(ws.overprovisioned_databases || 0);
+  const unattached = Number(ws.unattached_ips || 0);
+  const emptyLb = Number(ws.empty_load_balancers || 0);
+
+  const critical = idle;
+  const high = overComp + overDb;
+  const medium = orphaned + unattached;
+  const low = emptyLb;
+
+  const segments = [
+    { name: "Critical", value: critical, color: "#ef4444" },
+    { name: "High", value: high, color: "#f59e0b" },
+    { name: "Medium", value: medium, color: "#3b82f6" },
+    { name: "Low", value: low, color: "#94a3b8" },
+  ].filter((s) => s.value > 0);
+
+  const total = segments.reduce((s, d) => s + d.value, 0);
+  if (!total) {
+    return (
+      <div className="waste-donut-empty">
+        <p className="text-muted">No waste signals detected</p>
+      </div>
+    );
+  }
+
+  const r = 42;
+  const circ = 2 * Math.PI * r;
+  let offset = 0;
+
+  return (
+    <div className="waste-donut-wrap">
+      <div className="waste-donut-chart">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r={r} fill="none" stroke="var(--track-bg)" strokeWidth="10" />
+          {segments.map((seg) => {
+            const pct = seg.value / total;
+            const dash = pct * circ;
+            const gap = circ - dash;
+            const rotate = (offset / total) * 360 - 90;
+            offset += seg.value;
+            return (
+              <circle key={seg.name} cx="50" cy="50" r={r} fill="none" stroke={seg.color} strokeWidth="10" strokeDasharray={`${dash} ${gap}`} strokeLinecap="butt" transform={`rotate(${rotate} 50 50)`} />
+            );
+          })}
+        </svg>
+        <div className="waste-donut-center">
+          <strong>{total}</strong>
+          <span>signals</span>
+        </div>
+      </div>
+      <div className="waste-donut-legend">
+        {segments.map((seg) => (
+          <div className="waste-legend-row" key={seg.name}>
+            <span className="legend-dot" style={{ background: seg.color }} />
+            <span className="waste-legend-label">{seg.name}</span>
+            <strong>{seg.value}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function buildSpendByTypeSteps(profile, liveDashboard) {
+  const resources = profile?.resources || {};
+  const cost = profile?.cost || {};
+  const currentSpend = Number(cost.current_monthly_spend || 0);
+  const totalRes = Number(resources.core_total || 1);
+  const compute = Number(resources.compute || 0);
+  const volumes = Number(resources.volumes || 0);
+  const databases = Number(resources.databases || 0);
+  const network = Number(resources.load_balancers || 0) + Number(resources.elastic_ips || 0);
+  const snapshots = Number(resources.snapshots || 0);
+
+  const computeShare = totalRes > 0 ? (compute / totalRes) * currentSpend * 0.55 : 0;
+  const dbShare = totalRes > 0 ? (databases / totalRes) * currentSpend * 1.2 : 0;
+  const volShare = totalRes > 0 ? (volumes / totalRes) * currentSpend * 0.6 : 0;
+  const netShare = totalRes > 0 ? (network / totalRes) * currentSpend * 0.8 : 0;
+  const snapShare = totalRes > 0 ? (snapshots / totalRes) * currentSpend * 0.3 : 0;
+
+  const history = liveDashboard?.action_history || [];
+  const steps = [];
+  let cumSavings = 0;
+
+  steps.push({
+    step: "Init",
+    Compute: Math.round(computeShare),
+    Databases: Math.round(dbShare),
+    Storage: Math.round(volShare),
+    Network: Math.round(netShare),
+    Snapshots: Math.round(snapShare),
+  });
+
+  if (history.length > 0) {
+    history.forEach((h, i) => {
+      const saving = h.ok ? Number(h.estimated_monthly_savings_usd || 0) : 0;
+      cumSavings += saving;
+      const factor = Math.max(0, 1 - cumSavings / Math.max(1, currentSpend));
+      steps.push({
+        step: `Step ${i + 1}`,
+        Compute: Math.round(computeShare * factor),
+        Databases: Math.round(dbShare * factor),
+        Storage: Math.round(volShare * factor),
+        Network: Math.round(netShare * factor),
+        Snapshots: Math.round(snapShare * factor),
+      });
+    });
+  } else {
+    for (let i = 1; i <= 3; i++) {
+      const factor = 1 - (i * 0.03);
+      steps.push({
+        step: `Step ${i}`,
+        Compute: Math.round(computeShare * factor),
+        Databases: Math.round(dbShare * factor),
+        Storage: Math.round(volShare * factor),
+        Network: Math.round(netShare * factor),
+        Snapshots: Math.round(snapShare * factor),
+      });
+    }
+  }
+  return steps;
+}
+
 function OverviewPage({
   task, seed, loading, error, liveLoading, liveError, liveMessage, liveBusyKey,
   activeProfile, previewProfile, liveDashboard, optimizationPressure,
@@ -521,203 +676,247 @@ function OverviewPage({
   onRefreshLive, onRunLiveAction, onOpenUseCase,
 }) {
   const chosenProfile = activeProfile || previewProfile;
-  const resources = chosenProfile?.resources || {};
-  const resourcePieData = [
-    { name: "Compute", value: Number(resources.compute || 0) },
-    { name: "Volumes", value: Number(resources.volumes || 0) },
-    { name: "Databases", value: Number(resources.databases || 0) },
-    { name: "Load Balancers", value: Number(resources.load_balancers || 0) },
-    { name: "Snapshots", value: Number(resources.snapshots || 0) },
-    { name: "Elastic IPs", value: Number(resources.elastic_ips || 0) },
-  ].filter((d) => d.value > 0);
+  const colors = useThemeColors();
+
+  const wasteSignals = chosenProfile?.waste_signals || {};
+  const wasteTotal = sumValues(wasteSignals);
+  const resourceTotal = Number(chosenProfile?.resources?.core_total || 0);
+  const wasteScore = resourceTotal > 0 ? Math.min(100, (wasteTotal / resourceTotal) * 100) : 0;
+
+  const actionsCount = liveDashboard?.action_history?.length || 0;
+  const successActions = (liveDashboard?.action_history || []).filter((a) => a.ok && !a.dry_run).length;
+  const savingsAchieved = (liveDashboard?.action_history || [])
+    .filter((a) => a.ok && !a.dry_run)
+    .reduce((sum, a) => sum + Number(a.estimated_monthly_savings_usd || 0), 0);
+
+  const spendData = useMemo(
+    () => buildSpendByTypeSteps(chosenProfile, liveDashboard),
+    [chosenProfile, liveDashboard]
+  );
+
+  const topRecs = useMemo(() => {
+    return (liveDashboard?.recommendations || [])
+      .slice()
+      .sort((a, b) => Number(b.estimated_monthly_savings_usd || 0) - Number(a.estimated_monthly_savings_usd || 0))
+      .slice(0, 5);
+  }, [liveDashboard?.recommendations]);
+
+  const targetSpend = Number(chosenProfile?.cost?.target_monthly_spend || 0);
+  const savingsProgress = currentCost > 0 && targetSpend > 0
+    ? Math.min(100, (savingsAchieved / Math.max(1, currentCost - targetSpend)) * 100)
+    : 0;
 
   return (
     <>
       <div className="page-header">
         <div>
-          <h2 className="page-title">Cloud Cost Optimization Dashboard</h2>
-          <p className="page-subtitle">Seed {activeProfile?.seed || seed} · {toTitleCase(currentTaskName)}</p>
+          <h2 className="page-title">Overview</h2>
+          <p className="page-subtitle">{toTitleCase(currentTaskName)} · Seed {activeProfile?.seed || seed} · Step {activeStep}</p>
         </div>
         <div className="page-header-actions">
-          <button type="button" onClick={onRefreshPreview} disabled={loading}>Refresh Preview</button>
+          <div className="ov-controls">
+            <select className="ov-select" value={task} onChange={(e) => onTaskChange(e.target.value)}>
+              {TASKS.map((t) => <option key={t} value={t}>{toTitleCase(t)}</option>)}
+            </select>
+            <input className="ov-input" value={seed} onChange={(e) => onSeedChange(e.target.value)} placeholder="Seed" style={{ width: 70 }} />
+          </div>
+          <button type="button" onClick={onRefreshPreview} disabled={loading}>Refresh</button>
           <button type="button" className="solid" onClick={onStartEpisode} disabled={loading}>Start Episode</button>
         </div>
       </div>
 
-      <section className="kpi-grid">
-        <StatCard icon="pressure" label="Optimization Pressure" value={fmtPercent(optimizationPressure)} helper={`step ${activeStep}`} />
-        <StatCard icon="spend" iconColor="blue" label="Monthly Spend" value={fmtMoney(currentCost)} helper={activeProfile?.seed ? `seed ${activeProfile.seed}` : "no active episode"} />
-        <StatCard icon="savings" label="Potential Savings" value={fmtMoney(potentialSavings)} helper="ranked action estimate" />
-        <StatCard icon="actions" iconColor="amber" label="Actions Logged" value={String(liveDashboard?.action_history?.length || 0)} helper={liveDashboard?.can_apply_actions ? "apply enabled" : "dry-run mode"} />
+      {error && <p className="error-text">{error}</p>}
+
+      <section className="ov-kpi-row">
+        <MetricCard
+          icon={<IconSvg name="spend" />}
+          iconVariant="blue"
+          label="Monthly Spend"
+          value={fmtMoney(currentCost)}
+          delta={targetSpend > 0 ? fmtPercent(((currentCost - targetSpend) / targetSpend) * 100) : null}
+          deltaDirection={currentCost > targetSpend ? "up" : "down"}
+          helper={`Target ${fmtMoney(targetSpend)}`}
+        />
+        <MetricCard
+          icon={<IconSvg name="savings" />}
+          iconVariant="green"
+          label="Potential Savings"
+          value={fmtMoney(potentialSavings)}
+          delta={currentCost > 0 ? fmtPercent((potentialSavings / currentCost) * 100) : null}
+          deltaDirection="down"
+          helper="max estimated reduction"
+        />
+        <MetricCard
+          icon={<IconSvg name="waste" />}
+          iconVariant="red"
+          label="Waste Score"
+          value={fmtPercent(wasteScore)}
+          delta={`${wasteTotal} signals`}
+          deltaDirection={wasteScore > 20 ? "up" : "down"}
+          helper={`across ${resourceTotal} resources`}
+        />
+        <MetricCard
+          icon={<IconSvg name="actions" />}
+          iconVariant="amber"
+          label="Actions Applied"
+          value={String(successActions)}
+          delta={actionsCount > 0 ? `${actionsCount} total` : null}
+          helper={savingsAchieved > 0 ? `${fmtMoney(savingsAchieved)} saved` : "no savings yet"}
+        />
+        <MetricCard
+          icon={<IconSvg name="pressure" />}
+          label="Optimization Pressure"
+          value={fmtPercent(optimizationPressure)}
+          delta={`step ${activeStep}`}
+          deltaDirection={optimizationPressure > 15 ? "up" : "down"}
+          helper={optimizationPressure > 30 ? "high pressure" : "manageable"}
+        />
       </section>
 
-      <section className="visual-grid">
-        <MiniDonutChart data={resourcePieData} label="Resource Distribution" sublabel="resources" />
-        <WasteGauge wasteSignals={chosenProfile?.waste_signals} />
-        <CostBreakdownChart cost={chosenProfile?.cost} />
+      <section className="ov-mid-grid">
+        <SectionCard title="Cost by Resource Type" badge={spendData.length > 1 ? `${spendData.length} steps` : null}>
+          {currentCost > 0 ? (
+            <div style={{ width: "100%", height: 260 }}>
+              <ResponsiveContainer>
+                <AreaChart data={spendData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                  <XAxis dataKey="step" stroke={colors.axis} tick={{ fill: colors.axis, fontSize: 11 }} />
+                  <YAxis stroke={colors.axis} tick={{ fill: colors.axis, fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip content={<ChartTooltip formatter={(v) => fmtMoney(v)} />} />
+                  <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                  <Area type="monotone" dataKey="Compute" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.7} />
+                  <Area type="monotone" dataKey="Databases" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.7} />
+                  <Area type="monotone" dataKey="Storage" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.7} />
+                  <Area type="monotone" dataKey="Network" stackId="1" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.7} />
+                  <Area type="monotone" dataKey="Snapshots" stackId="1" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.5} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p className="empty-text">Cost data appears after loading a scenario.</p>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Waste Severity" badge={wasteTotal > 0 ? `${wasteTotal} total` : null}>
+          <WasteSeverityDonut wasteSignals={chosenProfile?.waste_signals} />
+        </SectionCard>
       </section>
 
-      <div className="charts-row">
-        <article className="card">
-          <div className="card-header"><h3>Savings Opportunity Spectrum</h3></div>
-          <div className="card-body">
-            <SavingsTrend recommendations={liveDashboard?.recommendations} actionHistory={liveDashboard?.action_history} />
-          </div>
-        </article>
-        <article className="card">
-          <div className="card-header"><h3>Optimization Progress</h3></div>
-          <div className="card-body progress-ring-wrap">
-            <div className="progress-ring">
+      <section className="ov-bottom-grid">
+        <SectionCard title="Top Recommendations" badge={topRecs.length > 0 ? `${topRecs.length} actions` : null} noPadding>
+          {topRecs.length > 0 ? (
+            <table className="dt-table ov-rec-table">
+              <thead>
+                <tr className="dt-head-row">
+                  <th className="dt-th">Resource</th>
+                  <th className="dt-th">Action</th>
+                  <th className="dt-th dt-right">Est. Savings</th>
+                  <th className="dt-th" style={{ width: 60 }}>Risk</th>
+                  <th className="dt-th" style={{ width: 120 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {topRecs.map((rec) => {
+                  const applyKey = `${rec.action_type}:${rec.resource_id}:apply`;
+                  const dryKey = `${rec.action_type}:${rec.resource_id}:dry`;
+                  return (
+                    <tr className="dt-row" key={`${rec.action_type}:${rec.resource_id}`}>
+                      <td className="dt-td">
+                        <span className="ov-rec-name">{rec.resource_name}</span>
+                        <span className="ov-rec-type">{signalLabel(rec.action_type)}</span>
+                      </td>
+                      <td className="dt-td">{recLabel(rec.action_type)}</td>
+                      <td className="dt-td dt-right ov-rec-savings">{fmtMoney(rec.estimated_monthly_savings_usd)}</td>
+                      <td className="dt-td"><RiskBadge risk={rec.risk} /></td>
+                      <td className="dt-td">
+                        <div className="ov-rec-btns">
+                          <button
+                            type="button"
+                            className="ov-btn-sm"
+                            disabled={liveBusyKey !== ""}
+                            onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, false)}
+                          >
+                            {liveBusyKey === dryKey ? "..." : "Dry"}
+                          </button>
+                          <button
+                            type="button"
+                            className="ov-btn-sm solid"
+                            disabled={liveBusyKey !== "" || !liveDashboard?.can_apply_actions}
+                            onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, true)}
+                          >
+                            {liveBusyKey === applyKey ? "..." : "Apply"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div style={{ padding: 20 }}>
+              <p className="empty-text">No recommendations yet. Start an episode to generate optimization suggestions.</p>
+            </div>
+          )}
+          {liveError && <p className="error-text" style={{ padding: "0 16px 12px" }}>{liveError}</p>}
+          {liveMessage && <p className="live-message" style={{ padding: "0 16px 12px" }}>{liveMessage}</p>}
+        </SectionCard>
+
+        <SectionCard title="Optimization Progress">
+          <div className="ov-progress-wrap">
+            <div className="ov-progress-ring">
               <svg viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r="52" fill="none" stroke="var(--ring-track)" strokeWidth="10" />
-                <circle cx="60" cy="60" r="52" fill="none" stroke="#22c55e" strokeWidth="10" strokeDasharray={`${optimizationPressure * 3.27} 327`} strokeLinecap="round" transform="rotate(-90 60 60)" className="progress-ring-circle" />
+                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ring-track)" strokeWidth="8" />
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#22c55e" strokeWidth="8"
+                  strokeDasharray={`${optimizationPressure * 3.14} 314`}
+                  strokeLinecap="round" transform="rotate(-90 60 60)" className="progress-ring-circle" />
               </svg>
-              <div className="progress-ring-label">
+              <div className="ov-ring-label">
                 <strong>{fmtPercent(optimizationPressure)}</strong>
-                <span>Overall</span>
+                <span>pressure</span>
               </div>
             </div>
-            <div className="progress-legend">
-              <div><span className="legend-dot" style={{ background: "#22c55e" }} /> Savings Found</div>
-              <div><span className="legend-dot" style={{ background: "#3b82f6" }} /> Actions Applied</div>
-              <div><span className="legend-dot" style={{ background: "#f59e0b" }} /> Remaining Gap</div>
+            <div className="ov-progress-stats">
+              <div className="ov-stat-row">
+                <span className="ov-stat-label">Savings Achieved</span>
+                <strong className="ov-stat-value green">{fmtMoney(savingsAchieved)}</strong>
+              </div>
+              <div className="ov-stat-row">
+                <span className="ov-stat-label">Target Gap</span>
+                <strong className="ov-stat-value">{fmtMoney(Math.max(0, currentCost - targetSpend))}</strong>
+              </div>
+              <div className="ov-stat-row">
+                <span className="ov-stat-label">Progress to Target</span>
+                <div className="ov-progress-bar-wrap">
+                  <div className="ov-progress-bar">
+                    <div className="ov-progress-fill" style={{ width: `${savingsProgress}%` }} />
+                  </div>
+                  <span className="ov-progress-pct">{fmtPercent(savingsProgress)}</span>
+                </div>
+              </div>
+              <div className="ov-stat-row">
+                <span className="ov-stat-label">Actions Applied</span>
+                <strong className="ov-stat-value">{successActions} of {actionsCount}</strong>
+              </div>
             </div>
           </div>
-        </article>
-      </div>
-
-      <section className="studio-panel">
-        <div className="card-header">
-          <h3>Scenario Studio</h3>
-          <span className="card-badge">Configure</span>
-        </div>
-        <div className="studio-controls">
-          <div className="field-group">
-            <label htmlFor="task">Task</label>
-            <select id="task" value={task} onChange={(e) => onTaskChange(e.target.value)}>
-              {TASKS.map((entry) => (
-                <option key={entry} value={entry}>{toTitleCase(entry)}</option>
-              ))}
-            </select>
-          </div>
-          <div className="field-group">
-            <label htmlFor="seed">Seed</label>
-            <input id="seed" value={seed} onChange={(e) => onSeedChange(e.target.value)} />
-          </div>
-          <div className="actions">
-            <button type="button" onClick={onRefreshPreview} disabled={loading}>Preview Scenario</button>
-            <button type="button" className="solid" onClick={onStartEpisode} disabled={loading}>Start Episode</button>
-            <button type="button" onClick={() => onOpenUseCase(task)}>Open Use-Case</button>
-          </div>
-        </div>
+        </SectionCard>
       </section>
 
-      {error ? <p className="error-text">{error}</p> : null}
-
-      <section className="tab-section">
-        <div className="tab-header"><h3>Use Cases</h3></div>
-        <div className="usecase-table">
-          <div className="table-header">
-            <span>Use Case</span>
-            <span>Description</span>
-            <span>Action</span>
+      <section className="ov-scenarios">
+        <SectionCard title="Quick Scenarios" noPadding>
+          <div className="ov-scenario-grid">
+            {TASKS.map((t) => (
+              <button key={t} className={`ov-scenario-card ${t === task ? "ov-scenario-active" : ""}`} onClick={() => onOpenUseCase(t)}>
+                <div className="ov-scenario-icon"><IconSvg name={t === "cleanup" ? "cleanup" : t === "rightsize" ? "rightsize" : "optimization"} /></div>
+                <div className="ov-scenario-text">
+                  <strong>{TASK_META[t].title}</strong>
+                  <span>{TASK_META[t].description}</span>
+                </div>
+              </button>
+            ))}
           </div>
-          {TASKS.map((entry) => (
-            <div key={entry} className="table-row">
-              <span className="table-cell-title">{TASK_META[entry].title}</span>
-              <span className="table-cell-desc">{TASK_META[entry].description}</span>
-              <span><button type="button" onClick={() => onOpenUseCase(entry)}>View Charts</button></span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="profile-stack">
-        <ProfileCard title="Preview Profile" profile={previewProfile} />
-        <ProfileCard title="Active Profile" profile={activeProfile} />
-      </section>
-
-      <section className="ops-shell">
-        <div className="card-header">
-          <h3>Live Operations Console</h3>
-          <button type="button" onClick={() => onRefreshLive(true)} disabled={liveLoading}>
-            {liveLoading ? "Refreshing..." : "Refresh Live"}
-          </button>
-        </div>
-        {liveError ? <p className="error-text">{liveError}</p> : null}
-        {liveMessage ? <p className="live-message">{liveMessage}</p> : null}
-        <div className="kpi-grid compact">
-          <StatCard label="Live Connection" value={liveDashboard?.connected ? "Connected" : "Offline"} helper={liveDashboard?.region || "unknown region"} />
-          <StatCard label="Potential Savings" value={fmtMoney(liveDashboard?.potential_monthly_savings_usd || 0)} helper="monthly estimate" />
-          <StatCard label="Can Apply" value={liveDashboard?.can_apply_actions ? "Yes" : "No"} helper="toggle via env var" />
-          <StatCard label="Action History" value={String(liveDashboard?.action_history?.length || 0)} helper="latest 20 events" />
-        </div>
-        <div className="ops-grid">
-          <article className="card">
-            <div className="card-header"><h3>Prioritized Recommendations</h3></div>
-            <div className="card-body">
-              {liveDashboard?.recommendations?.length ? (
-                <ul className="rec-list">
-                  {liveDashboard.recommendations.map((rec) => {
-                    const dryKey = `${rec.action_type}:${rec.resource_id}:dry`;
-                    const applyKey = `${rec.action_type}:${rec.resource_id}:apply`;
-                    return (
-                      <li className="rec-item" key={`${rec.action_type}:${rec.resource_id}`}>
-                        <div className="rec-copy">
-                          <p className="rec-title">{recLabel(rec.action_type)} · {rec.resource_name}</p>
-                          <p className="rec-badge">{signalLabel(rec.action_type)}</p>
-                          <p className="rec-meta">{rec.reason}</p>
-                          <p className="rec-meta rec-metrics">
-                            <span className={`status-chip status-${String(rec.risk || "low").toLowerCase()}`}>Risk {rec.risk}</span>
-                            <span>Est. savings {fmtMoney(rec.estimated_monthly_savings_usd)}</span>
-                          </p>
-                        </div>
-                        <div className="rec-actions">
-                          <button type="button" disabled={liveBusyKey !== ""} onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, false)}>
-                            {liveBusyKey === dryKey ? "Running..." : "Dry Run"}
-                          </button>
-                          <button type="button" className="solid" disabled={liveBusyKey !== "" || !liveDashboard?.can_apply_actions} onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, true)}>
-                            {liveBusyKey === applyKey ? "Applying..." : "Apply"}
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className="empty-text">No recommendations yet. Start an episode and refresh live data.</p>
-              )}
-            </div>
-          </article>
-          <article className="card">
-            <div className="card-header"><h3>Recent Actions</h3></div>
-            <div className="card-body">
-              {liveDashboard?.action_history?.length ? (
-                <ul className="history-list">
-                  {liveDashboard.action_history.slice().reverse().map((event, idx) => (
-                    <li className="history-item" key={`${event.timestamp}-${event.resource_id}-${idx}`}>
-                      <p><strong>{recLabel(event.action_type)}</strong> on {event.resource_id}</p>
-                      <p className="history-meta-line">
-                        <span className={`status-chip ${event.ok ? "status-active" : "status-high"}`}>{event.ok ? "ok" : "failed"}</span>
-                        <span>{event.dry_run ? "Dry run" : "Executed"}</span>
-                        <span>savings {fmtMoney(event.estimated_monthly_savings_usd)}</span>
-                      </p>
-                      <p>{event.message}</p>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="empty-text">No actions recorded yet.</p>
-              )}
-            </div>
-          </article>
-          <article className="card wide">
-            <div className="card-header"><h3>Resource Footprint Map</h3></div>
-            <div className="card-body">
-              <ResourceMap counts={liveDashboard?.resource_counts} />
-            </div>
-          </article>
-        </div>
+        </SectionCard>
       </section>
     </>
   );

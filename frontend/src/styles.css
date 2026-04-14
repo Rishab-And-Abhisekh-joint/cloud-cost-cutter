@@ -394,6 +394,334 @@ body {
   margin-bottom: 12px;
 }
 
+.ov-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ov-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.ov-select,
+.ov-input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.ov-mid-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ov-bottom-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.waste-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.waste-donut-chart {
+  position: relative;
+  width: 130px;
+  min-width: 130px;
+  height: 130px;
+}
+
+.waste-donut-chart svg {
+  width: 100%;
+  height: 100%;
+}
+
+.waste-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.waste-donut-center strong {
+  font-size: 1.3rem;
+  color: var(--text-primary);
+}
+
+.waste-donut-center span {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.waste-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.waste-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.waste-legend-label {
+  flex: 1;
+  color: var(--text-secondary);
+}
+
+.waste-legend-row strong {
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.waste-donut-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+}
+
+.ov-rec-table {
+  font-size: 0.8rem;
+}
+
+.ov-rec-name {
+  display: block;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.ov-rec-type {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.ov-rec-savings {
+  font-weight: 600;
+  color: var(--green-600);
+}
+
+.ov-rec-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.ov-btn-sm {
+  font-size: 0.7rem;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.ov-btn-sm:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
+}
+
+.ov-btn-sm.solid {
+  background: var(--green-500);
+  border-color: var(--green-500);
+  color: #fff;
+}
+
+.ov-btn-sm.solid:hover {
+  background: var(--green-600);
+}
+
+.ov-btn-sm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ov-progress-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 4px 0;
+}
+
+.ov-progress-ring {
+  position: relative;
+  width: 110px;
+  min-width: 110px;
+  height: 110px;
+}
+
+.ov-progress-ring svg {
+  width: 100%;
+  height: 100%;
+}
+
+.ov-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ov-ring-label strong {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.ov-ring-label span {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ov-progress-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.ov-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ov-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.ov-stat-value {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.ov-stat-value.green {
+  color: var(--green-500);
+}
+
+.ov-progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.ov-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--track-bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ov-progress-fill {
+  height: 100%;
+  background: var(--green-500);
+  border-radius: 3px;
+  transition: width 300ms ease;
+}
+
+.ov-progress-pct {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 36px;
+  text-align: right;
+}
+
+.ov-scenarios {
+  margin-bottom: 16px;
+}
+
+.ov-scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+}
+
+.ov-scenario-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--text-primary);
+  transition: background var(--transition);
+}
+
+.ov-scenario-card:hover {
+  background: var(--bg-hover);
+}
+
+.ov-scenario-active {
+  background: var(--green-50) !important;
+}
+
+.ov-scenario-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.ov-scenario-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ov-scenario-text strong {
+  font-size: 0.8rem;
+}
+
+.ov-scenario-text span {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
 .kpi-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -2139,6 +2467,10 @@ button:disabled {
   .studio-controls { grid-template-columns: 1fr; }
   .visual-grid { grid-template-columns: 1fr 1fr; }
   .table-header, .table-row { grid-template-columns: 140px 1fr 90px; }
+  .ov-kpi-row { grid-template-columns: repeat(3, 1fr); }
+  .ov-mid-grid { grid-template-columns: 1fr; }
+  .ov-bottom-grid { grid-template-columns: 1fr; }
+  .ov-scenario-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
