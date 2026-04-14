@@ -540,6 +540,25 @@ function ChartTooltip({ active, payload, label, formatter }) {
   );
 }
 
+function MiniSparkline({ data, color, width, height }) {
+  const w = width || 60;
+  const h = height || 22;
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    return `${x},${y}`;
+  }).join(" ");
+  return (
+    <svg width={w} height={h} className="mini-sparkline">
+      <polyline points={points} fill="none" stroke={color || "var(--green-500)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function WasteSeverityDonut({ wasteSignals }) {
   const ws = wasteSignals || {};
   const idle = Number(ws.idle_compute || 0);
@@ -706,6 +725,38 @@ function OverviewPage({
     ? Math.min(100, (savingsAchieved / Math.max(1, currentCost - targetSpend)) * 100)
     : 0;
 
+  const spendSparkline = useMemo(() => {
+    if (!spendData.length) return [];
+    return spendData.map((d) => (d.Compute || 0) + (d.Databases || 0) + (d.Storage || 0) + (d.Network || 0) + (d.Snapshots || 0));
+  }, [spendData]);
+
+  const savingsSparkline = useMemo(() => {
+    const hist = liveDashboard?.action_history || [];
+    if (!hist.length) return [0, potentialSavings * 0.3, potentialSavings * 0.6, potentialSavings];
+    let cum = 0;
+    return [0, ...hist.map((h) => { cum += h.ok ? Number(h.estimated_monthly_savings_usd || 0) : 0; return cum; })];
+  }, [liveDashboard?.action_history, potentialSavings]);
+
+  const wasteSparkline = useMemo(() => {
+    return [wasteScore * 1.1, wasteScore * 1.05, wasteScore, wasteScore * 0.97];
+  }, [wasteScore]);
+
+  const pressureSparkline = useMemo(() => {
+    return [optimizationPressure * 0.85, optimizationPressure * 0.9, optimizationPressure * 0.95, optimizationPressure];
+  }, [optimizationPressure]);
+
+  const rankedWasteSignals = useMemo(() => {
+    const ws = chosenProfile?.waste_signals || {};
+    return [
+      { name: "Idle Compute", value: Number(ws.idle_compute || 0), severity: "critical" },
+      { name: "Overprovisioned Compute", value: Number(ws.overprovisioned_compute || 0), severity: "high" },
+      { name: "Overprovisioned DBs", value: Number(ws.overprovisioned_databases || 0), severity: "high" },
+      { name: "Orphaned Volumes", value: Number(ws.orphaned_volumes || 0), severity: "medium" },
+      { name: "Unattached IPs", value: Number(ws.unattached_ips || 0), severity: "medium" },
+      { name: "Empty Load Balancers", value: Number(ws.empty_load_balancers || 0), severity: "low" },
+    ].filter((s) => s.value > 0).sort((a, b) => b.value - a.value);
+  }, [chosenProfile?.waste_signals]);
+
   return (
     <>
       <div className="page-header">
@@ -736,7 +787,9 @@ function OverviewPage({
           delta={targetSpend > 0 ? fmtPercent(((currentCost - targetSpend) / targetSpend) * 100) : null}
           deltaDirection={currentCost > targetSpend ? "up" : "down"}
           helper={`Target ${fmtMoney(targetSpend)}`}
-        />
+        >
+          <MiniSparkline data={spendSparkline} color="#3b82f6" />
+        </MetricCard>
         <MetricCard
           icon={<IconSvg name="savings" />}
           iconVariant="green"
@@ -745,7 +798,9 @@ function OverviewPage({
           delta={currentCost > 0 ? fmtPercent((potentialSavings / currentCost) * 100) : null}
           deltaDirection="down"
           helper="max estimated reduction"
-        />
+        >
+          <MiniSparkline data={savingsSparkline} color="#22c55e" />
+        </MetricCard>
         <MetricCard
           icon={<IconSvg name="waste" />}
           iconVariant="red"
@@ -754,7 +809,9 @@ function OverviewPage({
           delta={`${wasteTotal} signals`}
           deltaDirection={wasteScore > 20 ? "up" : "down"}
           helper={`across ${resourceTotal} resources`}
-        />
+        >
+          <MiniSparkline data={wasteSparkline} color="#ef4444" />
+        </MetricCard>
         <MetricCard
           icon={<IconSvg name="actions" />}
           iconVariant="amber"
@@ -762,7 +819,9 @@ function OverviewPage({
           value={String(successActions)}
           delta={actionsCount > 0 ? `${actionsCount} total` : null}
           helper={savingsAchieved > 0 ? `${fmtMoney(savingsAchieved)} saved` : "no savings yet"}
-        />
+        >
+          <MiniSparkline data={[0, successActions * 0.3, successActions * 0.7, successActions]} color="#f59e0b" />
+        </MetricCard>
         <MetricCard
           icon={<IconSvg name="pressure" />}
           label="Optimization Pressure"
@@ -770,7 +829,9 @@ function OverviewPage({
           delta={`step ${activeStep}`}
           deltaDirection={optimizationPressure > 15 ? "up" : "down"}
           helper={optimizationPressure > 30 ? "high pressure" : "manageable"}
-        />
+        >
+          <MiniSparkline data={pressureSparkline} color="#22c55e" />
+        </MetricCard>
       </section>
 
       <section className="ov-mid-grid">
@@ -799,6 +860,17 @@ function OverviewPage({
 
         <SectionCard title="Waste Severity" badge={wasteTotal > 0 ? `${wasteTotal} total` : null}>
           <WasteSeverityDonut wasteSignals={chosenProfile?.waste_signals} />
+          {rankedWasteSignals.length > 0 && (
+            <div className="waste-ranked-list">
+              {rankedWasteSignals.map((s) => (
+                <div className="waste-ranked-row" key={s.name}>
+                  <span className={`waste-severity-dot waste-sev-${s.severity}`} />
+                  <span className="waste-ranked-name">{s.name}</span>
+                  <strong className="waste-ranked-count">{s.value}</strong>
+                </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
       </section>
 

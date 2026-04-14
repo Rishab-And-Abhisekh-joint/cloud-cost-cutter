@@ -502,6 +502,50 @@ body {
   min-height: 140px;
 }
 
+.waste-ranked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.waste-ranked-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  padding: 3px 0;
+}
+
+.waste-severity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  min-width: 8px;
+}
+
+.waste-sev-critical { background: #ef4444; }
+.waste-sev-high { background: #f59e0b; }
+.waste-sev-medium { background: #3b82f6; }
+.waste-sev-low { background: #94a3b8; }
+
+.waste-ranked-name {
+  flex: 1;
+  color: var(--text-secondary);
+}
+
+.waste-ranked-count {
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.mini-sparkline {
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
 .ov-rec-table {
   font-size: 0.8rem;
 }
