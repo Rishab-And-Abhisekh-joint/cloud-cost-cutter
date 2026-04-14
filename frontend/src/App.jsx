@@ -374,15 +374,15 @@ function OverviewPage({
     <>
       <section className="hero-panel">
         <div>
-          <p className="hero-kicker">Cloud Consulting Delivery Hub</p>
-          <h2 className="hero-title">Real-Time FinOps Command And Advisory Workspace</h2>
+          <p className="hero-kicker">Cloud Consulting Services</p>
+          <h2 className="hero-title">Modern IT And Google Cloud Operations Workspace</h2>
           <p className="hero-copy">
-            Built for cloud consultants and platform teams to spot waste, model deterministic scenarios, and execute high-confidence optimization actions.
+            Built for cloud teams to model migration outcomes, evaluate platform efficiency, and execute high-confidence optimization actions from one command center.
           </p>
           <ul className="hero-badges" aria-label="Core capabilities">
-            <li>Cost Governance</li>
-            <li>Rightsizing Signals</li>
-            <li>Automation Ready</li>
+            <li>Cloud Migration</li>
+            <li>DevOps Advisory</li>
+            <li>Cost Optimization</li>
           </ul>
         </div>
         <div className="pressure-panel">
@@ -802,8 +802,8 @@ function AppShell() {
         <div className="brand-wrap">
           <div className="brand-mark">CC</div>
           <div>
-            <p className="eyebrow">CloudCostEnv Consulting Console</p>
-            <h1>Enterprise FinOps Intelligence Workspace</h1>
+            <p className="eyebrow">Modern IT And Google Cloud Agency</p>
+            <h1>Cloud Consulting Services Intelligence Console</h1>
           </div>
         </div>
         <div className="status-cluster">
