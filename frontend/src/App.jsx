@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const TASKS = ["cleanup", "rightsize", "full_optimization"];
 const DEFAULT_PROD_API_BASE_URL = "https://cloud-cost-env-api-production.up.railway.app";
@@ -59,6 +60,30 @@ function fmtMoney(value) {
 
 function fmtPercent(value) {
   return `${Number(value || 0).toFixed(1)}%`;
+}
+
+function fmtHours(totalMinutes) {
+  const safeMinutes = Math.max(0, Math.round(Number(totalMinutes || 0)));
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function buildWeeklyHours(actionHistory = []) {
+  const labels = ["Sep 7", "Sep 8", "Sep 9", "Sep 10", "Sep 11", "Sep 12", "Sep 13"];
+  const seeds = [18, 20, 24, 22, 27, 32, 28];
+  const historyBoost = Math.min(9, Number(actionHistory.length || 0));
+
+  return labels.map((name, index) => {
+    const signal = Number(actionHistory[index]?.estimated_monthly_savings_usd || 0);
+    const billable = seeds[index] + historyBoost * 0.5 + Math.min(7, signal / 120);
+    const nonBillable = Math.max(4, 12 - index * 0.7 + historyBoost * 0.2);
+    return {
+      name,
+      billable: Number(billable.toFixed(1)),
+      nonBillable: Number(nonBillable.toFixed(1)),
+    };
+  });
 }
 
 function sumValues(record) {
@@ -370,233 +395,191 @@ function OverviewPage({
   onRunLiveAction,
   onOpenUseCase,
 }) {
+  const actionHistory = liveDashboard?.action_history || [];
+  const recommendations = liveDashboard?.recommendations || [];
+  const weeklyHours = useMemo(() => buildWeeklyHours(actionHistory), [actionHistory]);
+  const totalMinutes = 118 * 60 + activeStep * 14 + actionHistory.length * 9;
+  const totalBudget = Math.max(currentCost, currentCost + potentialSavings);
+  const budgetRemaining = Math.max(0, totalBudget - currentCost);
+  const progressValue = Math.max(0, Math.min(100, Math.round(optimizationPressure)));
+
   return (
     <>
-      <section className="hero-panel">
-        <div>
-          <p className="hero-kicker">Cloud Consulting Services</p>
-          <h2 className="hero-title">Modern IT And Google Cloud Operations Workspace</h2>
-          <p className="hero-copy">
-            Built for cloud teams to model migration outcomes, evaluate platform efficiency, and execute high-confidence optimization actions from one command center.
-          </p>
-          <ul className="hero-badges" aria-label="Core capabilities">
-            <li>Cloud Migration</li>
-            <li>DevOps Advisory</li>
-            <li>Cost Optimization</li>
+      <section className="metric-strip">
+        <article className="summary-card">
+          <div className="summary-icon">H</div>
+          <p className="summary-label">Total Hours</p>
+          <p className="summary-value">{fmtHours(totalMinutes)}</p>
+          <p className="summary-help">Derived from active steps and execution history</p>
+        </article>
+        <article className="summary-card">
+          <div className="summary-icon">B</div>
+          <p className="summary-label">Total Budget</p>
+          <p className="summary-value">{fmtMoney(totalBudget)}</p>
+          <p className="summary-help">Current spend plus projected optimization capacity</p>
+        </article>
+        <article className="summary-card">
+          <div className="summary-icon">R</div>
+          <p className="summary-label">Budget Remaining</p>
+          <p className="summary-value">{fmtMoney(budgetRemaining)}</p>
+          <p className="summary-help">Available room against active monthly budget</p>
+        </article>
+      </section>
+
+      <section className="analytics-grid">
+        <article className="panel-card hours-panel">
+          <div className="panel-head">
+            <h3>Hours per week</h3>
+            <button type="button" onClick={() => onRefreshLive(true)} disabled={liveLoading}>
+              {liveLoading ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+          <div className="hours-chart-wrap">
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={weeklyHours} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="4 4" stroke="rgba(176, 182, 193, 0.62)" vertical={false} />
+                <XAxis dataKey="name" stroke="#8e9aa8" tickLine={false} axisLine={false} />
+                <YAxis stroke="#8e9aa8" tickLine={false} axisLine={false} />
+                <Tooltip formatter={(value) => `${Number(value || 0).toFixed(1)} h`} />
+                <Legend />
+                <Line type="monotone" dataKey="billable" stroke="#2b7fff" strokeWidth={2.5} dot={false} />
+                <Line
+                  type="monotone"
+                  dataKey="nonBillable"
+                  stroke="#9ba8b8"
+                  strokeWidth={2.2}
+                  strokeDasharray="6 4"
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+
+        <article className="panel-card progress-panel">
+          <div className="panel-head">
+            <h3>Task progress</h3>
+          </div>
+          <div className="progress-ring" style={{ "--progress": progressValue }}>
+            <div className="progress-ring-inner">
+              <strong>{progressValue}%</strong>
+              <span>Overall</span>
+            </div>
+          </div>
+          <ul className="progress-legend">
+            <li>
+              <span className="legend-dot dot-blue" /> Design
+            </li>
+            <li>
+              <span className="legend-dot dot-orange" /> Business
+            </li>
+            <li>
+              <span className="legend-dot dot-yellow" /> Project management
+            </li>
           </ul>
-        </div>
-        <div className="pressure-panel">
-          <p>Optimization Pressure</p>
-          <strong>{fmtPercent(optimizationPressure)}</strong>
-          <div className="pressure-track">
-            <div className="pressure-fill" style={{ width: `${optimizationPressure}%` }} />
-          </div>
-          <small>
-            Potential savings {fmtMoney(potentialSavings)} of current spend {fmtMoney(currentCost)}
-          </small>
-        </div>
+        </article>
       </section>
 
-      <section className="kpi-grid">
-        <StatCard label="Active Task" value={toTitleCase(currentTaskName)} helper={`step ${activeStep}`} />
-        <StatCard
-          label="Monthly Spend"
-          value={fmtMoney(currentCost)}
-          helper={activeProfile?.seed ? `seed ${activeProfile.seed}` : "no active episode"}
-        />
-        <StatCard label="Potential Savings" value={fmtMoney(potentialSavings)} helper="ranked action estimate" />
-        <StatCard
-          label="Actions Logged"
-          value={String(liveDashboard?.action_history?.length || 0)}
-          helper={liveDashboard?.can_apply_actions ? "apply enabled" : "dry-run mode"}
-        />
-      </section>
-
-      <section className="studio-panel">
-        <div className="studio-head">
-          <div>
-            <p className="eyebrow">Scenario Studio</p>
-            <h2>Configure Deterministic Benchmark Runs</h2>
-          </div>
-          <span className="studio-meta">Backend {health} · API {apiHint} · Updated {lastUpdate}</span>
+      <section className="control-bar">
+        <div className="field-group">
+          <label htmlFor="task">Task</label>
+          <select id="task" value={task} onChange={(e) => onTaskChange(e.target.value)}>
+            {TASKS.map((entry) => (
+              <option key={entry} value={entry}>
+                {toTitleCase(entry)}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div className="studio-controls">
-          <div className="field-group">
-            <label htmlFor="task">Task</label>
-            <select id="task" value={task} onChange={(e) => onTaskChange(e.target.value)}>
-              {TASKS.map((entry) => (
-                <option key={entry} value={entry}>
-                  {toTitleCase(entry)}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="field-group">
+          <label htmlFor="seed">Seed</label>
+          <input id="seed" value={seed} onChange={(e) => onSeedChange(e.target.value)} />
+        </div>
 
-          <div className="field-group">
-            <label htmlFor="seed">Seed</label>
-            <input id="seed" value={seed} onChange={(e) => onSeedChange(e.target.value)} />
-          </div>
-
-          <div className="actions">
-            <button type="button" onClick={onRefreshPreview} disabled={loading}>
-              Preview Scenario
-            </button>
-            <button type="button" className="solid" onClick={onStartEpisode} disabled={loading}>
-              Start Episode
-            </button>
-            <button type="button" onClick={() => onOpenUseCase(task)}>
-              Open Use-Case Page
-            </button>
-          </div>
+        <div className="actions">
+          <button type="button" onClick={onRefreshPreview} disabled={loading}>
+            Preview Scenario
+          </button>
+          <button type="button" className="solid" onClick={onStartEpisode} disabled={loading}>
+            Start Episode
+          </button>
+          <button type="button" onClick={() => onOpenUseCase(task)}>
+            Open Use-Case Page
+          </button>
         </div>
       </section>
 
       {error ? <p className="error-text">{error}</p> : null}
+      {liveError ? <p className="error-text">{liveError}</p> : null}
+      {liveMessage ? <p className="live-message">{liveMessage}</p> : null}
 
-      <section className="usecase-grid">
-        {TASKS.map((entry) => (
-          <article key={entry} className="usecase-card">
-            <p className="eyebrow">Use Case</p>
-            <h3>{TASK_META[entry].title}</h3>
-            <p>{TASK_META[entry].description}</p>
-            <button type="button" onClick={() => onOpenUseCase(entry)}>
-              View {toTitleCase(entry)} Charts
+      <section className="task-table-panel">
+        <div className="task-table-title">
+          <div className="task-tabs" role="tablist" aria-label="Task categories">
+            <button type="button" className="task-tab active">
+              Billable Tasks
             </button>
-          </article>
-        ))}
+            <button type="button" className="task-tab">
+              Non Billable Tasks
+            </button>
+          </div>
+          <button type="button" onClick={() => onOpenUseCase(task)}>
+            View detailed charts
+          </button>
+        </div>
+
+        <div className="task-table">
+          <div className="task-table-head">
+            <span>Task</span>
+            <span>Team members</span>
+            <span>Working hours</span>
+            <span>Billable amount</span>
+            <span>Total cost</span>
+            <span>Status</span>
+            <span>Action</span>
+          </div>
+
+          {recommendations.length ? (
+            recommendations.slice(0, 6).map((rec) => {
+              const estimated = Number(rec.estimated_monthly_savings_usd || 0);
+              const dryKey = `${rec.action_type}:${rec.resource_id}:dry`;
+              const risk = String(rec.risk || "low").toLowerCase();
+              const statusLabel = risk === "high" ? "Review" : "Active";
+              const statusClass = risk === "high" ? "status-pill review" : "status-pill active";
+
+              return (
+                <div className="task-row" key={`${rec.action_type}:${rec.resource_id}`}>
+                  <span>{recLabel(rec.action_type)}</span>
+                  <span>{signalLabel(rec.action_type)}</span>
+                  <span>{(estimated / 26).toFixed(1)}</span>
+                  <span>{fmtMoney(estimated)}</span>
+                  <span>{fmtMoney(estimated * 1.08)}</span>
+                  <span>
+                    <span className={statusClass}>{statusLabel}</span>
+                  </span>
+                  <span>
+                    <button
+                      type="button"
+                      className="row-action"
+                      disabled={liveBusyKey !== ""}
+                      onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, false)}
+                    >
+                      {liveBusyKey === dryKey ? "Running" : "Dry run"}
+                    </button>
+                  </span>
+                </div>
+              );
+            })
+          ) : (
+            <p className="empty-text table-empty">No tasks yet. Start an episode and refresh live data.</p>
+          )}
+        </div>
       </section>
 
       <section className="profile-stack">
         <ProfileCard title="Preview Profile" profile={previewProfile} />
         <ProfileCard title="Active Profile" profile={activeProfile} />
-      </section>
-
-      <section className="ops-shell">
-        <div className="ops-top">
-          <div>
-            <p className="eyebrow">Live Dashboard</p>
-            <h2>Optimization Queue And Execution Console</h2>
-          </div>
-          <button type="button" onClick={() => onRefreshLive(true)} disabled={liveLoading}>
-            {liveLoading ? "Refreshing..." : "Refresh Live"}
-          </button>
-        </div>
-
-        {liveError ? <p className="error-text">{liveError}</p> : null}
-        {liveMessage ? <p className="live-message">{liveMessage}</p> : null}
-
-        <div className="kpi-grid compact">
-          <StatCard
-            label="Live Connection"
-            value={liveDashboard?.connected ? "connected" : "offline"}
-            helper={liveDashboard?.region || "unknown region"}
-          />
-          <StatCard
-            label="Potential Savings"
-            value={fmtMoney(liveDashboard?.potential_monthly_savings_usd || 0)}
-            helper="monthly estimate"
-          />
-          <StatCard
-            label="Can Apply"
-            value={liveDashboard?.can_apply_actions ? "yes" : "no"}
-            helper="toggle via LIVE_DASHBOARD_ALLOW_APPLY"
-          />
-          <StatCard
-            label="Action History"
-            value={String(liveDashboard?.action_history?.length || 0)}
-            helper="latest 20 events"
-          />
-        </div>
-
-        <div className="ops-grid">
-          <article className="ops-card">
-            <h3>Savings Opportunity Spectrum</h3>
-            <SavingsTrend recommendations={liveDashboard?.recommendations} actionHistory={liveDashboard?.action_history} />
-          </article>
-
-          <article className="ops-card">
-            <h3>Prioritized Recommendations</h3>
-            {liveDashboard?.recommendations?.length ? (
-              <ul className="rec-list">
-                {liveDashboard.recommendations.map((rec) => {
-                  const dryKey = `${rec.action_type}:${rec.resource_id}:dry`;
-                  const applyKey = `${rec.action_type}:${rec.resource_id}:apply`;
-
-                  return (
-                    <li className="rec-item" key={`${rec.action_type}:${rec.resource_id}`}>
-                      <div className="rec-copy">
-                        <p className="rec-title">
-                          {recLabel(rec.action_type)} · {rec.resource_name}
-                        </p>
-                        <p className="rec-badge">{signalLabel(rec.action_type)}</p>
-                        <p className="rec-meta">{rec.reason}</p>
-                        <p className="rec-meta rec-metrics">
-                          <span className={`risk-chip risk-${String(rec.risk || "low").toLowerCase()}`}>
-                            Risk {rec.risk}
-                          </span>
-                          <span>Est. savings {fmtMoney(rec.estimated_monthly_savings_usd)}</span>
-                        </p>
-                      </div>
-                      <div className="rec-actions">
-                        <button
-                          type="button"
-                          disabled={liveBusyKey !== ""}
-                          onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, false)}
-                        >
-                          {liveBusyKey === dryKey ? "Running..." : "Dry Run"}
-                        </button>
-                        <button
-                          type="button"
-                          className="solid"
-                          disabled={liveBusyKey !== "" || !liveDashboard?.can_apply_actions}
-                          onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, true)}
-                        >
-                          {liveBusyKey === applyKey ? "Applying..." : "Apply"}
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="empty-text">No recommendations yet. Start an episode and refresh live data.</p>
-            )}
-          </article>
-
-          <article className="ops-card">
-            <h3>Recent Actions</h3>
-            {liveDashboard?.action_history?.length ? (
-              <ul className="history-list">
-                {liveDashboard.action_history
-                  .slice()
-                  .reverse()
-                  .map((event, idx) => (
-                    <li className="history-item" key={`${event.timestamp}-${event.resource_id}-${idx}`}>
-                      <p>
-                        <strong>{recLabel(event.action_type)}</strong> on {event.resource_id}
-                      </p>
-                      <p className="history-meta-line">
-                        <span className={`history-chip ${event.ok ? "history-chip-ok" : "history-chip-fail"}`}>
-                          {event.ok ? "ok" : "failed"}
-                        </span>
-                        <span>{event.dry_run ? "Dry run" : "Executed"}</span>
-                        <span>savings {fmtMoney(event.estimated_monthly_savings_usd)}</span>
-                      </p>
-                      <p>{event.message}</p>
-                    </li>
-                  ))}
-              </ul>
-            ) : (
-              <p className="empty-text">No actions recorded yet.</p>
-            )}
-          </article>
-
-          <article className="ops-card wide">
-            <h3>Resource Footprint Map</h3>
-            <ResourceMap counts={liveDashboard?.resource_counts} />
-          </article>
-        </div>
       </section>
     </>
   );
@@ -793,119 +776,156 @@ function AppShell() {
   }
 
   return (
-    <main className="ui-shell">
-      <div className="noise-layer" />
-      <div className="orb orb-a" />
-      <div className="orb orb-b" />
-
-      <header className="topbar">
-        <div className="brand-wrap">
-          <div className="brand-mark">CC</div>
-          <div>
-            <p className="eyebrow">Modern IT And Google Cloud Agency</p>
-            <h1>Cloud Consulting Services Intelligence Console</h1>
-          </div>
+    <main className="workspace-shell">
+      <aside className="sidebar">
+        <div className="sidebar-top">
+          <p className="sidebar-space">Jone&apos;s space</p>
+          <p className="sidebar-email">jackson.graham@example.com</p>
+          <button type="button" className="sidebar-new">
+            + New project
+          </button>
+          <input className="sidebar-search" value="Search" readOnly aria-label="Search" />
         </div>
-        <div className="status-cluster">
-          <span className={`pill ${health === "online" ? "pill-good" : "pill-bad"}`}>Backend {health}</span>
-          <span className="pill pill-soft">API {apiHint}</span>
-          <span className="pill pill-soft">Updated {lastUpdate}</span>
-        </div>
-      </header>
 
-      <nav className="main-nav" aria-label="Dashboard pages">
-        <NavLink to="/overview" className={({ isActive }) => `main-nav-link ${isActive ? "active" : ""}`}>
-          Overview
-        </NavLink>
-        {TASKS.map((entry) => (
-          <NavLink
-            key={entry}
-            to={`/use-cases/${entry}`}
-            className={({ isActive }) => `main-nav-link ${isActive ? "active" : ""}`}
-          >
-            {toTitleCase(entry)}
+        <p className="sidebar-section-title">Main menu</p>
+        <nav className="sidebar-nav" aria-label="Main menu">
+          <span className="sidebar-nav-item active">Projects</span>
+          <span className="sidebar-nav-item">Time Tracking</span>
+          <span className="sidebar-nav-item">Expenses</span>
+          <span className="sidebar-nav-item">Team</span>
+          <span className="sidebar-nav-item">Invoices</span>
+          <span className="sidebar-nav-item">Management</span>
+        </nav>
+
+        <div className="sidebar-divider" />
+        <p className="sidebar-section-title">Favorites</p>
+        <div className="sidebar-favorites">
+          <span className="sidebar-favorite-item">Product V2.0</span>
+          <span className="sidebar-favorite-item">Construction Site Support</span>
+          <span className="sidebar-favorite-item">User Interview For Ecommerce</span>
+          <span className="sidebar-favorite-item">UX Design And Research</span>
+        </div>
+
+        <div className="sidebar-divider" />
+        <p className="sidebar-section-title">Dashboard views</p>
+        <nav className="sidebar-routes" aria-label="Dashboard pages">
+          <NavLink to="/overview" className={({ isActive }) => `sidebar-route-link ${isActive ? "active" : ""}`}>
+            Project Overview
           </NavLink>
-        ))}
-        <NavLink to="/rl-status" className={({ isActive }) => `main-nav-link ${isActive ? "active" : ""}`}>
-          Agent + RL
-        </NavLink>
-      </nav>
+          {TASKS.map((entry) => (
+            <NavLink
+              key={entry}
+              to={`/use-cases/${entry}`}
+              className={({ isActive }) => `sidebar-route-link ${isActive ? "active" : ""}`}
+            >
+              {toTitleCase(entry)}
+            </NavLink>
+          ))}
+          <NavLink to="/rl-status" className={({ isActive }) => `sidebar-route-link ${isActive ? "active" : ""}`}>
+            Agent + RL
+          </NavLink>
+        </nav>
+      </aside>
 
-      <section className="route-panel">
-        <Routes>
-          <Route path="/" element={<Navigate to="/overview" replace />} />
-          <Route
-            path="/overview"
-            element={
-              <OverviewPage
-                task={task}
-                seed={seed}
-                health={health}
-                apiHint={apiHint}
-                lastUpdate={lastUpdate}
-                loading={loading}
-                error={error}
-                liveLoading={liveLoading}
-                liveError={liveError}
-                liveMessage={liveMessage}
-                liveBusyKey={liveBusyKey}
-                activeProfile={activeProfile}
-                previewProfile={previewProfile}
-                liveDashboard={liveDashboard}
-                optimizationPressure={optimizationPressure}
-                currentTaskName={currentTaskName}
-                activeStep={activeStep}
-                currentCost={currentCost}
-                potentialSavings={potentialSavings}
-                onSeedChange={setSeed}
-                onTaskChange={handleTaskChange}
-                onRefreshPreview={() => refreshPreview(true)}
-                onStartEpisode={() => startEpisode(task, seed)}
-                onRefreshLive={refreshLiveDashboard}
-                onRunLiveAction={runLiveAction}
-                onOpenUseCase={openUseCase}
-              />
-            }
-          />
-          <Route
-            path="/use-cases/:taskName"
-            element={
-              <Suspense fallback={<p className="chart-empty">Loading use-case route...</p>}>
-                <LazyUseCaseRoutePage
+      <section className="workspace-main">
+        <header className="workspace-topbar">
+          <button type="button" className="back-btn">
+            Back to projects
+          </button>
+          <div className="workspace-actions">
+            <span className={`pill ${health === "online" ? "pill-good" : "pill-bad"}`}>Backend {health}</span>
+            <span className="pill pill-soft">API {apiHint}</span>
+            <span className="pill pill-soft">Updated {lastUpdate}</span>
+            <button type="button">Edit project</button>
+            <button type="button" className="solid">
+              Create Invoice
+            </button>
+          </div>
+        </header>
+
+        <section className="project-heading">
+          <h1>Cloud-Based Accounting SaaS project</h1>
+          <p>
+            Sep 7, 2024 - Sep 21, 2024 · Current task {toTitleCase(currentTaskName)} · Step {activeStep}
+          </p>
+        </section>
+
+        <section className="route-panel">
+          <Routes>
+            <Route path="/" element={<Navigate to="/overview" replace />} />
+            <Route
+              path="/overview"
+              element={
+                <OverviewPage
                   task={task}
-                  onTaskChange={handleTaskChange}
-                  tasks={TASKS}
-                  taskMeta={TASK_META}
                   seed={seed}
+                  health={health}
+                  apiHint={apiHint}
+                  lastUpdate={lastUpdate}
                   loading={loading}
-                  previewProfile={previewProfile}
+                  error={error}
+                  liveLoading={liveLoading}
+                  liveError={liveError}
+                  liveMessage={liveMessage}
+                  liveBusyKey={liveBusyKey}
                   activeProfile={activeProfile}
+                  previewProfile={previewProfile}
                   liveDashboard={liveDashboard}
+                  optimizationPressure={optimizationPressure}
+                  currentTaskName={currentTaskName}
+                  activeStep={activeStep}
+                  currentCost={currentCost}
+                  potentialSavings={potentialSavings}
                   onSeedChange={setSeed}
+                  onTaskChange={handleTaskChange}
                   onRefreshPreview={() => refreshPreview(true)}
                   onStartEpisode={() => startEpisode(task, seed)}
                   onRefreshLive={refreshLiveDashboard}
-                  StatCard={StatCard}
-                  ProfileCard={ProfileCard}
+                  onRunLiveAction={runLiveAction}
+                  onOpenUseCase={openUseCase}
                 />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/rl-status"
-            element={
-              <Suspense fallback={<p className="chart-empty">Loading RL status...</p>}>
-                <LazyRLStatusPage
-                  rlStatus={rlStatus}
-                  rlLoading={rlLoading}
-                  rlError={rlError}
-                  onRefresh={refreshAgentStatus}
-                />
-              </Suspense>
-            }
-          />
-          <Route path="*" element={<Navigate to="/overview" replace />} />
-        </Routes>
+              }
+            />
+            <Route
+              path="/use-cases/:taskName"
+              element={
+                <Suspense fallback={<p className="chart-empty">Loading use-case route...</p>}>
+                  <LazyUseCaseRoutePage
+                    task={task}
+                    onTaskChange={handleTaskChange}
+                    tasks={TASKS}
+                    taskMeta={TASK_META}
+                    seed={seed}
+                    loading={loading}
+                    previewProfile={previewProfile}
+                    activeProfile={activeProfile}
+                    liveDashboard={liveDashboard}
+                    onSeedChange={setSeed}
+                    onRefreshPreview={() => refreshPreview(true)}
+                    onStartEpisode={() => startEpisode(task, seed)}
+                    onRefreshLive={refreshLiveDashboard}
+                    StatCard={StatCard}
+                    ProfileCard={ProfileCard}
+                  />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/rl-status"
+              element={
+                <Suspense fallback={<p className="chart-empty">Loading RL status...</p>}>
+                  <LazyRLStatusPage
+                    rlStatus={rlStatus}
+                    rlLoading={rlLoading}
+                    rlError={rlError}
+                    onRefresh={refreshAgentStatus}
+                  />
+                </Suspense>
+              }
+            />
+            <Route path="*" element={<Navigate to="/overview" replace />} />
+          </Routes>
+        </section>
       </section>
     </main>
   );
