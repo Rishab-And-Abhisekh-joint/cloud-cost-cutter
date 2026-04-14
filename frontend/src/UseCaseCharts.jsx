@@ -160,7 +160,7 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
 
   return (
     <section className="charts-grid">
-      <ChartCard title="Resource Composition" subtitle="Pie chart by resource counts">
+      <ChartCard title="Resource Cost by Type" subtitle="Composition by active resource groups">
         {resourcePie.length ? (
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -178,7 +178,7 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         )}
       </ChartCard>
 
-      <ChartCard title="Waste Signal Mix" subtitle="Pie chart of optimization opportunities">
+      <ChartCard title="Waste Categories" subtitle="Signals contributing to waste score">
         {wastePie.length ? (
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -196,7 +196,7 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         )}
       </ChartCard>
 
-      <ChartCard title="Cost Envelope" subtitle="Current vs target and expected max savings">
+      <ChartCard title="Current vs Target vs Max Savings" subtitle="Cost envelope for this scenario">
         {costBars.some((entry) => entry.value > 0) ? (
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={costBars}>
@@ -216,7 +216,7 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         )}
       </ChartCard>
 
-      <ChartCard title="Action Savings Trend" subtitle="Recent live action savings progression">
+      <ChartCard title="Savings Over Time" subtitle="Recent action-level savings progression">
         {historyTrend.length ? (
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={historyTrend}>
@@ -234,7 +234,7 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         )}
       </ChartCard>
 
-      <ChartCard title="Top Recommendation Savings" subtitle="Bar chart of highest monthly opportunities">
+      <ChartCard title="Optimization Velocity" subtitle="Top recommendation pressure by resource">
         {recommendationBars.length ? (
           <ResponsiveContainer width="100%" height={270}>
             <BarChart data={recommendationBars} layout="vertical" margin={{ left: 24 }}>
