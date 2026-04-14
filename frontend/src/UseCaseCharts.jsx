@@ -15,7 +15,7 @@ import {
   YAxis,
 } from "recharts";
 
-const PIE_COLORS = ["#0ea770", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+const PIE_COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#f87171", "#a78bfa", "#22d3ee"];
 
 function toTitleCase(value) {
   return String(value || "")
@@ -188,7 +188,7 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         {costBars.some((entry) => entry.value > 0) ? (
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={costBars}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
               <XAxis dataKey="name" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
@@ -208,13 +208,13 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         {historyTrend.length ? (
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={historyTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
               <XAxis dataKey="step" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
               <Legend />
               <Line type="monotone" dataKey="stepSavings" stroke="#f59e0b" strokeWidth={2.4} dot={false} />
-              <Line type="monotone" dataKey="cumulativeSavings" stroke="#0ea770" strokeWidth={2.4} dot={false} />
+              <Line type="monotone" dataKey="cumulativeSavings" stroke="#10b981" strokeWidth={2.4} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         ) : (
@@ -226,11 +226,11 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         {recommendationBars.length ? (
           <ResponsiveContainer width="100%" height={270}>
             <BarChart data={recommendationBars} layout="vertical" margin={{ left: 24 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
               <XAxis type="number" stroke="#94a3b8" />
               <YAxis dataKey="resource" type="category" width={120} stroke="#94a3b8" />
               <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
-              <Bar dataKey="savings" radius={[0, 8, 8, 0]} fill="#0ea770" />
+              <Bar dataKey="savings" radius={[0, 8, 8, 0]} fill="#10b981" />
             </BarChart>
           </ResponsiveContainer>
         ) : (

@@ -19,13 +19,14 @@ A cloud cost optimization Reinforcement Learning environment built on the OpenEn
 - React SPA communicating with backend at `http://127.0.0.1:8000`
 - Uses Recharts for visualizations, React Router for navigation
 - `src/App.jsx` — Main app shell with live dashboard and scenario studio
-- **Design**: Professional B2B light theme inspired by Figma "Cloud Consulting Services" design
-  - Color palette: White backgrounds, dark navy hero/studio panels, green (#0ea770) brand accent
+- **Design**: Dark/black theme, professional B2B dashboard
+  - Color palette: Dark backgrounds (#0a0e17), dark cards (#111827), green (#10b981) brand accent
   - Typography: Inter + Plus Jakarta Sans, CSS custom properties for spacing/colors
-  - Cards: 16px border-radius, subtle shadows, clean borders
-  - Charts: Green/blue/amber palette on light grid backgrounds
-  - Accessibility: WCAG AA contrast, focus-visible outlines on all interactive elements
+  - Cards: 16px border-radius, subtle shadows, semi-transparent borders
+  - Charts: Green/blue/amber palette on dark grid backgrounds
+  - Accessibility: Focus-visible outlines on all interactive elements
   - Plain CSS (no Tailwind) — all styles in `src/styles.css`
+  - Top bar status cluster (Backend/API/Updated pills) removed for cleaner look
 
 ## Running Locally
 

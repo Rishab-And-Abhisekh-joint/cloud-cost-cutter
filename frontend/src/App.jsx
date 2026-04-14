@@ -345,9 +345,6 @@ function SavingsTrend({ recommendations, actionHistory }) {
 function OverviewPage({
   task,
   seed,
-  health,
-  apiHint,
-  lastUpdate,
   loading,
   error,
   liveLoading,
@@ -418,7 +415,7 @@ function OverviewPage({
             <p className="eyebrow">Scenario Studio</p>
             <h2>Configure Deterministic Benchmark Runs</h2>
           </div>
-          <span className="studio-meta">Backend {health} · API {apiHint} · Updated {lastUpdate}</span>
+          <span className="studio-meta">Benchmark Configuration</span>
         </div>
 
         <div className="studio-controls">
@@ -621,7 +618,6 @@ function AppShell() {
   const [rlLoading, setRlLoading] = useState(false);
   const [rlError, setRlError] = useState("");
 
-  const apiHint = useMemo(() => API_BASE_URL.replace(/^https?:\/\//, ""), []);
   const currentCost = Number(activeProfile?.cost?.current_monthly_spend || previewProfile?.cost?.current_monthly_spend || 0);
   const potentialSavings = Number(
     liveDashboard?.potential_monthly_savings_usd || activeProfile?.cost?.max_possible_savings_8_steps || 0
@@ -629,8 +625,6 @@ function AppShell() {
   const optimizationPressure = currentCost > 0 ? Math.min(100, (potentialSavings / currentCost) * 100) : 0;
   const currentTaskName = activeProfile?.task_name || task;
   const activeStep = Number(activeProfile?.step_count || 0);
-  const lastUpdate = liveDashboard?.updated_at ? new Date(liveDashboard.updated_at).toLocaleTimeString() : "n/a";
-
   useEffect(() => {
     async function bootstrap() {
       try {
@@ -806,11 +800,6 @@ function AppShell() {
             <h1>Cloud Consulting Services Intelligence Console</h1>
           </div>
         </div>
-        <div className="status-cluster">
-          <span className={`pill ${health === "online" ? "pill-good" : "pill-bad"}`}>Backend {health}</span>
-          <span className="pill pill-soft">API {apiHint}</span>
-          <span className="pill pill-soft">Updated {lastUpdate}</span>
-        </div>
       </header>
 
       <nav className="main-nav" aria-label="Dashboard pages">
@@ -840,9 +829,6 @@ function AppShell() {
               <OverviewPage
                 task={task}
                 seed={seed}
-                health={health}
-                apiHint={apiHint}
-                lastUpdate={lastUpdate}
                 loading={loading}
                 error={error}
                 liveLoading={liveLoading}
