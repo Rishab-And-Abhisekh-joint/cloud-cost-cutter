@@ -500,6 +500,15 @@ def create_fastapi_app() -> FastAPI:
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.get("/live/resources", response_model=list[ResourceSummary])
+    def live_resources(task_name: str = "full_optimization", seed: int | None = None):
+        try:
+            _ensure_live_env(task_name=task_name, seed=seed)
+            obs = env.get_observation_snapshot()
+            return obs.resources_summary
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.post("/live/action", response_model=LiveActionResult)
     def live_action(action_request: LiveActionRequest, request: Request):
         _enforce_rate_limit(request, "live_action", rate_limit_live_action_per_window)

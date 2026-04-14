@@ -1,3 +1,22 @@
+function fmtValue(value) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+  return String(value);
+}
+
+function RLItem({ label, value }) {
+  return (
+    <article className="rl-detail-item">
+      <p className="kpi-label">{label}</p>
+      <p className="kpi-value">{fmtValue(value)}</p>
+    </article>
+  );
+}
+
 export default function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }) {
   const rlEnabled = Boolean(rlStatus?.rl_enabled);
 
@@ -5,12 +24,12 @@ export default function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }
     <section className="rl-shell">
       <div className="page-intro">
         <div>
-          <p className="eyebrow">Agent Runtime Check</p>
-          <h2>RL Runtime Status</h2>
-          <p>Transparent report of whether a real RL policy is active or the system is currently heuristic-driven.</p>
+          <p className="eyebrow">System</p>
+          <h2>Agent + RL</h2>
+          <p>Live runtime status for policy validation, decision engine source, and recommendation mode.</p>
         </div>
         <div className="page-intro-actions">
-          <button type="button" onClick={() => onRefresh(true)} disabled={rlLoading}>
+          <button type="button" className="btn-outline btn-sm" onClick={() => onRefresh(true)} disabled={rlLoading}>
             {rlLoading ? "Refreshing..." : "Refresh Status"}
           </button>
         </div>
@@ -20,39 +39,39 @@ export default function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }
 
       <div className="rl-status-banner">
         {rlEnabled ? (
-          <p className="status-note status-note-good">RL policy is active and loaded in runtime.</p>
+          <p className="badge badge-success">RL policy is active in runtime.</p>
         ) : (
-          <p className="status-note status-note-warn">
-            RL policy is not active right now. Current decision flow is heuristic/action-engine based.
-          </p>
+          <p className="badge badge-warning">RL policy is not active. Runtime is heuristic-driven.</p>
         )}
       </div>
 
-      <section className="rl-grid">
-        <article className="rl-card">
-          <p className="kpi-label">Control Mode</p>
-          <p className="kpi-value">{String(rlStatus?.control_mode || "unknown")}</p>
-          <p className="kpi-helper">Configured runtime mode reported by backend</p>
-        </article>
-        <article className="rl-card">
-          <p className="kpi-label">RL Enabled</p>
-          <p className="kpi-value">{rlEnabled ? "Yes" : "No"}</p>
-          <p className="kpi-helper">True only when mode=rl and policy artifact is loaded</p>
-        </article>
-        <article className="rl-card">
-          <p className="kpi-label">Policy Artifact</p>
-          <p className="kpi-value">{rlStatus?.rl_policy_loaded ? "Loaded" : "Not Loaded"}</p>
-          <p className="kpi-helper">Path: {rlStatus?.rl_policy_path || "not configured"}</p>
-        </article>
-        <article className="rl-card">
-          <p className="kpi-label">Decision Engine</p>
-          <p className="kpi-value">{rlStatus?.decision_engine || "unknown"}</p>
-          <p className="kpi-helper">Backend action execution engine currently in use</p>
-        </article>
+      <section className="rl-details-grid">
+        <RLItem label="Control Mode" value={rlStatus?.control_mode} />
+        <RLItem label="Decision Engine" value={rlStatus?.decision_engine} />
+        <RLItem label="Recommendation" value={rlStatus?.recommendation_engine} />
+        <RLItem label="Artifact Path" value={rlStatus?.rl_policy_path} />
+        <RLItem label="Version" value={rlStatus?.rl_policy_version} />
+        <RLItem label="Created" value={rlStatus?.rl_policy_created_at} />
+        <RLItem label="State Count" value={rlStatus?.policy_state_count} />
+        <RLItem label="Policy Loaded" value={rlStatus?.rl_policy_loaded} />
+        <RLItem label="Validation" value={rlStatus?.rl_policy_validated} />
+        <RLItem label="Last Validated" value={rlStatus?.rl_last_validated_at} />
+        <RLItem label="Config Mode" value={rlStatus?.control_mode_config} />
       </section>
 
-      <article className="ops-card wide rl-notes-card">
-        <h3>Backend Notes</h3>
+      {rlStatus?.rl_validation_error ? (
+        <article className="section-card">
+          <div className="section-title-wrap">
+            <h3>Validation Error</h3>
+          </div>
+          <p className="error-text">{rlStatus.rl_validation_error}</p>
+        </article>
+      ) : null}
+
+      <article className="section-card">
+        <div className="section-title-wrap">
+          <h3>Backend Notes</h3>
+        </div>
         {rlStatus?.notes?.length ? (
           <ul className="rl-note-list">
             {rlStatus.notes.map((note) => (

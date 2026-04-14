@@ -15,7 +15,9 @@ import {
   YAxis,
 } from "recharts";
 
-const PIE_COLORS = ["#2c7cff", "#22d3ee", "#ff9b42", "#ff6f8a", "#8e78ff", "#35d79a"];
+const PIE_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+const AXIS_STROKE = "#7488a3";
+const GRID_STROKE = "rgba(166, 183, 211, 0.45)";
 
 function toTitleCase(value) {
   return String(value || "")
@@ -148,7 +150,7 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
 
   return (
     <section className="charts-grid">
-      <ChartCard title="Resource Composition" subtitle="Pie chart by resource counts">
+      <ChartCard title="Resource Cost by Type" subtitle="Composition by active resource groups">
         {resourcePie.length ? (
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -166,7 +168,7 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         )}
       </ChartCard>
 
-      <ChartCard title="Waste Signal Mix" subtitle="Pie chart of optimization opportunities">
+      <ChartCard title="Waste Categories" subtitle="Signals contributing to waste score">
         {wastePie.length ? (
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -184,13 +186,13 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         )}
       </ChartCard>
 
-      <ChartCard title="Cost Envelope" subtitle="Current vs target and expected max savings">
+      <ChartCard title="Current vs Target vs Max Savings" subtitle="Cost envelope for this scenario">
         {costBars.some((entry) => entry.value > 0) ? (
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={costBars}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(154, 184, 232, 0.24)" />
-              <XAxis dataKey="name" stroke="#a7c3e5" />
-              <YAxis stroke="#a7c3e5" />
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+              <XAxis dataKey="name" stroke={AXIS_STROKE} />
+              <YAxis stroke={AXIS_STROKE} />
               <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
               <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                 {costBars.map((entry, index) => (
@@ -204,17 +206,17 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         )}
       </ChartCard>
 
-      <ChartCard title="Action Savings Trend" subtitle="Recent live action savings progression">
+      <ChartCard title="Savings Over Time" subtitle="Recent action-level savings progression">
         {historyTrend.length ? (
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={historyTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(154, 184, 232, 0.24)" />
-              <XAxis dataKey="step" stroke="#a7c3e5" />
-              <YAxis stroke="#a7c3e5" />
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+              <XAxis dataKey="step" stroke={AXIS_STROKE} />
+              <YAxis stroke={AXIS_STROKE} />
               <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
               <Legend />
-              <Line type="monotone" dataKey="stepSavings" stroke="#ff9b42" strokeWidth={2.4} dot={false} />
-              <Line type="monotone" dataKey="cumulativeSavings" stroke="#22d3ee" strokeWidth={2.4} dot={false} />
+              <Line type="monotone" dataKey="stepSavings" stroke="#f59e0b" strokeWidth={2.4} dot={false} />
+              <Line type="monotone" dataKey="cumulativeSavings" stroke="#06b6d4" strokeWidth={2.4} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         ) : (
@@ -222,13 +224,13 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         )}
       </ChartCard>
 
-      <ChartCard title="Top Recommendation Savings" subtitle="Bar chart of highest monthly opportunities">
+      <ChartCard title="Optimization Velocity" subtitle="Top recommendation pressure by resource">
         {recommendationBars.length ? (
           <ResponsiveContainer width="100%" height={270}>
             <BarChart data={recommendationBars} layout="vertical" margin={{ left: 24 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(154, 184, 232, 0.24)" />
-              <XAxis type="number" stroke="#a7c3e5" />
-              <YAxis dataKey="resource" type="category" width={120} stroke="#a7c3e5" />
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+              <XAxis type="number" stroke={AXIS_STROKE} />
+              <YAxis dataKey="resource" type="category" width={120} stroke={AXIS_STROKE} />
               <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
               <Bar dataKey="savings" radius={[0, 8, 8, 0]} fill="#2c7cff" />
             </BarChart>
