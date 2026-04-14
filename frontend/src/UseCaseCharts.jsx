@@ -15,7 +15,7 @@ import {
   YAxis,
 } from "recharts";
 
-const PIE_COLORS = ["#2fc79e", "#ffb15f", "#64b1f4", "#f9838c", "#95d66f", "#9b8fff"];
+const PIE_COLORS = ["#2165f5", "#0ea5b7", "#ef8d31", "#eb5c6a", "#6c55d9", "#19b26b"];
 
 function toTitleCase(value) {
   return String(value || "")
@@ -188,9 +188,9 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         {costBars.some((entry) => entry.value > 0) ? (
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={costBars}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(180, 210, 230, 0.18)" />
-              <XAxis dataKey="name" stroke="#9eb6c9" />
-              <YAxis stroke="#9eb6c9" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(93, 123, 151, 0.25)" />
+              <XAxis dataKey="name" stroke="#4c6b88" />
+              <YAxis stroke="#4c6b88" />
               <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
               <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                 {costBars.map((entry, index) => (
@@ -208,13 +208,13 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         {historyTrend.length ? (
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={historyTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(180, 210, 230, 0.18)" />
-              <XAxis dataKey="step" stroke="#9eb6c9" />
-              <YAxis stroke="#9eb6c9" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(93, 123, 151, 0.25)" />
+              <XAxis dataKey="step" stroke="#4c6b88" />
+              <YAxis stroke="#4c6b88" />
               <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
               <Legend />
-              <Line type="monotone" dataKey="stepSavings" stroke="#ffb15f" strokeWidth={2.4} dot={false} />
-              <Line type="monotone" dataKey="cumulativeSavings" stroke="#2fc79e" strokeWidth={2.4} dot={false} />
+              <Line type="monotone" dataKey="stepSavings" stroke="#ef8d31" strokeWidth={2.4} dot={false} />
+              <Line type="monotone" dataKey="cumulativeSavings" stroke="#2165f5" strokeWidth={2.4} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         ) : (
@@ -226,11 +226,11 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         {recommendationBars.length ? (
           <ResponsiveContainer width="100%" height={270}>
             <BarChart data={recommendationBars} layout="vertical" margin={{ left: 24 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(180, 210, 230, 0.18)" />
-              <XAxis type="number" stroke="#9eb6c9" />
-              <YAxis dataKey="resource" type="category" width={120} stroke="#9eb6c9" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(93, 123, 151, 0.25)" />
+              <XAxis type="number" stroke="#4c6b88" />
+              <YAxis dataKey="resource" type="category" width={120} stroke="#4c6b88" />
               <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
-              <Bar dataKey="savings" radius={[0, 8, 8, 0]} fill="#2fc79e" />
+              <Bar dataKey="savings" radius={[0, 8, 8, 0]} fill="#2165f5" />
             </BarChart>
           </ResponsiveContainer>
         ) : (

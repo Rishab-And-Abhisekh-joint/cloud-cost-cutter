@@ -374,10 +374,16 @@ function OverviewPage({
     <>
       <section className="hero-panel">
         <div>
-          <p className="hero-kicker">Operational Snapshot</p>
+          <p className="hero-kicker">Cloud Consulting Delivery Hub</p>
+          <h2 className="hero-title">Real-Time FinOps Command And Advisory Workspace</h2>
           <p className="hero-copy">
-            Multi-page command center with dedicated use-case screens, chart-first analytics, and live execution controls.
+            Built for cloud consultants and platform teams to spot waste, model deterministic scenarios, and execute high-confidence optimization actions.
           </p>
+          <ul className="hero-badges" aria-label="Core capabilities">
+            <li>Cost Governance</li>
+            <li>Rightsizing Signals</li>
+            <li>Automation Ready</li>
+          </ul>
         </div>
         <div className="pressure-panel">
           <p>Optimization Pressure</p>
@@ -796,8 +802,8 @@ function AppShell() {
         <div className="brand-wrap">
           <div className="brand-mark">CC</div>
           <div>
-            <p className="eyebrow">CloudCostEnv Command Center</p>
-            <h1>Professional FinOps Operations Dashboard</h1>
+            <p className="eyebrow">CloudCostEnv Consulting Console</p>
+            <h1>Enterprise FinOps Intelligence Workspace</h1>
           </div>
         </div>
         <div className="status-cluster">
