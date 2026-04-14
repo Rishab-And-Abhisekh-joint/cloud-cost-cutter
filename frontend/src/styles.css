@@ -1036,6 +1036,165 @@ body {
   }
 }
 
+.ca-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.ca-tab {
+  padding: 8px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all var(--transition);
+}
+
+.ca-tab:hover {
+  color: var(--text-primary);
+}
+
+.ca-tab-active {
+  color: var(--green-600);
+  border-bottom-color: var(--green-500);
+}
+
+.ca-content {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ca-chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.ca-full-width {
+  grid-column: span 2;
+}
+
+.ca-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ca-empty {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 40px 16px;
+}
+
+.ca-gauge {
+  padding: 20px 16px;
+}
+
+.ca-gauge-bar {
+  height: 20px;
+  background: var(--bg-inset);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ca-gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #3b82f6);
+  border-radius: 10px;
+  transition: width 0.6s ease;
+}
+
+.ca-gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.ca-gauge-value {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+}
+
+.ca-scenarios {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.ca-scenario-card {
+  min-width: 0;
+}
+
+.ca-scenario-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+.ca-scenario-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ca-scenario-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ca-scenario-kpi-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.ca-scenario-kpi-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ca-green { color: var(--green-600); }
+.ca-blue { color: #3b82f6; }
+.ca-red { color: #ef4444; }
+
+@media (max-width: 900px) {
+  .ca-chart-grid {
+    grid-template-columns: 1fr;
+  }
+  .ca-full-width {
+    grid-column: span 1;
+  }
+  .ca-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ca-scenarios {
+    grid-template-columns: 1fr;
+  }
+}
+
 .ov-rec-table {
   font-size: 0.8rem;
 }

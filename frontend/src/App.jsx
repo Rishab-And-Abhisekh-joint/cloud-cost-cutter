@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useState, useCallback } from "react";
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate, useLocation } from "react-router-dom";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { MetricCard, SectionCard, RiskBadge, DataTable, FilterBar, StatusBadge, CountBadge, ConfirmModal } from "./components/shared";
 
 const TASKS = ["cleanup", "rightsize", "full_optimization"];
@@ -1405,6 +1405,272 @@ function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, 
   );
 }
 
+function CostAnalyticsPage({ task, seed, previewProfile, liveDashboard }) {
+  const [activeTab, setActiveTab] = useState("breakdown");
+  const [scenarios, setScenarios] = useState({});
+  const [scenariosLoading, setScenariosLoading] = useState(false);
+
+  const profile = previewProfile;
+
+  useEffect(() => {
+    if (activeTab === "scenarios" && Object.keys(scenarios).length === 0) {
+      loadScenarios();
+    }
+  }, [activeTab]);
+
+  async function loadScenarios() {
+    setScenariosLoading(true);
+    const results = {};
+    for (const t of TASKS) {
+      try {
+        results[t] = await request(`/profile?task_name=${t}&seed=${seed}`);
+      } catch { results[t] = null; }
+    }
+    setScenarios(results);
+    setScenariosLoading(false);
+  }
+
+  const resourceData = useMemo(() => {
+    const r = profile?.resources || {};
+    return [
+      { name: "Compute", count: r.compute || 0 },
+      { name: "Volumes", count: r.volumes || 0 },
+      { name: "Databases", count: r.databases || 0 },
+      { name: "Load Balancers", count: r.load_balancers || 0 },
+      { name: "Snapshots", count: r.snapshots || 0 },
+      { name: "Elastic IPs", count: r.elastic_ips || 0 },
+    ].filter((d) => d.count > 0);
+  }, [profile]);
+
+  const wasteData = useMemo(() => {
+    const w = profile?.waste_signals || {};
+    return [
+      { name: "Idle Compute", value: w.idle_compute || 0 },
+      { name: "Orphaned Volumes", value: w.orphaned_volumes || 0 },
+      { name: "Unattached IPs", value: w.unattached_ips || 0 },
+      { name: "Empty LBs", value: w.empty_load_balancers || 0 },
+      { name: "Overprov. Compute", value: w.overprovisioned_compute || 0 },
+      { name: "Overprov. DB", value: w.overprovisioned_databases || 0 },
+    ].filter((d) => d.value > 0);
+  }, [profile]);
+
+  const costGrouped = useMemo(() => {
+    const c = profile?.cost || {};
+    const cur = c.current_monthly_spend || 0;
+    const tgt = c.target_monthly_spend || 0;
+    const max = c.max_possible_savings_8_steps || 0;
+    return [{ name: "Monthly Cost", current: cur, target: tgt, savings: max }];
+  }, [profile]);
+
+  const historyTrend = useMemo(() => {
+    const history = liveDashboard?.action_history || [];
+    let cum = 0;
+    return history.slice(-12).map((a, i) => {
+      const s = a.ok ? (a.estimated_monthly_savings_usd || 0) : 0;
+      cum += s;
+      return { step: `#${i + 1}`, savings: s, cumulative: Math.round(cum) };
+    });
+  }, [liveDashboard]);
+
+  const tabs = [
+    { key: "breakdown", label: "Breakdown" },
+    { key: "trends", label: "Trends" },
+    { key: "scenarios", label: "Scenarios" },
+  ];
+
+  const currentSpend = profile?.cost?.current_monthly_spend || 0;
+  const targetSpend = profile?.cost?.target_monthly_spend || 0;
+  const maxSavings = profile?.cost?.max_possible_savings_8_steps || 0;
+  const velocityPct = currentSpend > 0 ? Math.min(100, Math.round((maxSavings / currentSpend) * 100)) : 0;
+
+  return (
+    <>
+      <div className="page-header">
+        <div>
+          <h2 className="page-title">Cost Analytics</h2>
+          <p className="page-subtitle">Cost breakdown, savings trends, and scenario comparisons</p>
+        </div>
+      </div>
+
+      <div className="ca-tabs">
+        {tabs.map((t) => (
+          <button key={t.key} className={`ca-tab ${activeTab === t.key ? "ca-tab-active" : ""}`} onClick={() => setActiveTab(t.key)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "breakdown" && (
+        <div className="ca-content">
+          <div className="ca-chart-grid">
+            <SectionCard title="Cost by Resource Type">
+              {resourceData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={resourceData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="name" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.8rem" }} />
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                      {resourceData.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : <p className="ca-empty">No resource data available. Load a profile first.</p>}
+            </SectionCard>
+
+            <SectionCard title="Waste by Category">
+              {wasteData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={wasteData} layout="vertical" margin={{ left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis type="number" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <YAxis dataKey="name" type="category" width={120} tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.8rem" }} />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="#ef4444" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : <p className="ca-empty">No waste signals detected.</p>}
+            </SectionCard>
+
+            <SectionCard title="Current vs Target Spend" className="ca-full-width">
+              {currentSpend > 0 ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={costGrouped} barCategoryGap="30%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="name" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
+                    <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.8rem" }} formatter={(v) => fmtMoney(v)} />
+                    <Legend />
+                    <Bar dataKey="current" name="Current Spend" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="target" name="Target Spend" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="savings" name="Max Savings" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : <p className="ca-empty">Cost data appears after loading a profile.</p>}
+            </SectionCard>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "trends" && (
+        <div className="ca-content">
+          <div className="ca-kpi-row">
+            <MetricCard label="Current Spend" value={fmtMoney(currentSpend)} helper="monthly" />
+            <MetricCard label="Target Spend" value={fmtMoney(targetSpend)} helper="25% reduction goal" />
+            <MetricCard label="Max Savings" value={fmtMoney(maxSavings)} helper="in 8 steps" />
+            <MetricCard label="Optimization Velocity" value={`${velocityPct}%`} helper="savings as % of spend" />
+          </div>
+
+          <div className="ca-chart-grid">
+            <SectionCard title="Savings per Action">
+              {historyTrend.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={historyTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="step" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.8rem" }} formatter={(v) => fmtMoney(v)} />
+                    <Bar dataKey="savings" name="Step Savings" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : <p className="ca-empty">No action history yet. Apply actions to see savings trends.</p>}
+            </SectionCard>
+
+            <SectionCard title="Cumulative Savings">
+              {historyTrend.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <AreaChart data={historyTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="step" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+                    <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.8rem" }} formatter={(v) => fmtMoney(v)} />
+                    <Area type="monotone" dataKey="cumulative" name="Cumulative" stroke="#22c55e" fill="#22c55e" fillOpacity={0.15} strokeWidth={2.5} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : <p className="ca-empty">No cumulative data yet.</p>}
+            </SectionCard>
+
+            <SectionCard title="Optimization Velocity" className="ca-full-width">
+              <div className="ca-gauge">
+                <div className="ca-gauge-bar">
+                  <div className="ca-gauge-fill" style={{ width: `${velocityPct}%` }} />
+                </div>
+                <div className="ca-gauge-labels">
+                  <span>0%</span>
+                  <span className="ca-gauge-value">{velocityPct}% potential savings ratio</span>
+                  <span>100%</span>
+                </div>
+              </div>
+            </SectionCard>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "scenarios" && (
+        <div className="ca-content">
+          {scenariosLoading ? (
+            <div className="ri-loading"><p>Loading scenario comparisons...</p></div>
+          ) : (
+            <div className="ca-scenarios">
+              {TASKS.map((t) => {
+                const sp = scenarios[t];
+                if (!sp) return (
+                  <SectionCard key={t} title={TASK_META[t]?.title || toTitleCase(t)}>
+                    <p className="ca-empty">Failed to load profile.</p>
+                  </SectionCard>
+                );
+                const cur = sp.cost?.current_monthly_spend || 0;
+                const tgt = sp.cost?.target_monthly_spend || 0;
+                const max = sp.cost?.max_possible_savings_8_steps || 0;
+                const ws = sp.waste_signals || {};
+                const totalWaste = Object.values(ws).reduce((s, v) => s + v, 0);
+                const barData = [{ name: "Cost", current: cur, target: tgt, savings: max }];
+                return (
+                  <SectionCard key={t} title={TASK_META[t]?.title || toTitleCase(t)} className="ca-scenario-card">
+                    <p className="ca-scenario-desc">{TASK_META[t]?.description}</p>
+                    <div className="ca-scenario-kpis">
+                      <div className="ca-scenario-kpi">
+                        <span className="ca-scenario-kpi-label">Current</span>
+                        <span className="ca-scenario-kpi-value">{fmtMoney(cur)}</span>
+                      </div>
+                      <div className="ca-scenario-kpi">
+                        <span className="ca-scenario-kpi-label">Target</span>
+                        <span className="ca-scenario-kpi-value ca-green">{fmtMoney(tgt)}</span>
+                      </div>
+                      <div className="ca-scenario-kpi">
+                        <span className="ca-scenario-kpi-label">Max Savings</span>
+                        <span className="ca-scenario-kpi-value ca-blue">{fmtMoney(max)}</span>
+                      </div>
+                      <div className="ca-scenario-kpi">
+                        <span className="ca-scenario-kpi-label">Waste Signals</span>
+                        <span className="ca-scenario-kpi-value ca-red">{totalWaste}</span>
+                      </div>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={barData} barCategoryGap="20%">
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="name" tick={{ fill: "var(--text-muted)", fontSize: 10 }} />
+                        <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
+                        <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.75rem" }} formatter={(v) => fmtMoney(v)} />
+                        <Bar dataKey="current" name="Current" fill="#ef4444" radius={[3, 3, 0, 0]} />
+                        <Bar dataKey="target" name="Target" fill="#22c55e" radius={[3, 3, 0, 0]} />
+                        <Bar dataKey="savings" name="Max Savings" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </SectionCard>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 function StubPage({ icon, title, description }) {
   return (
     <div className="stub-page">
@@ -1662,7 +1928,7 @@ function AppShell() {
             />
           } />
           <Route path="/cost-analytics" element={
-            <StubPage icon="analytics" title="Cost Analytics" description="Cost breakdown by resource type, savings timeline, and scenario comparisons across optimization tasks. Coming in the next update." />
+            <CostAnalyticsPage task={task} seed={seed} previewProfile={previewProfile} liveDashboard={liveDashboard} />
           } />
           <Route path="/rl-status" element={
             <Suspense fallback={<p className="chart-empty">Loading RL status...</p>}>
