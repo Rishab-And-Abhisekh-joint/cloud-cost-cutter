@@ -33,6 +33,8 @@
   --purple-50: #f5f3ff;
   --cyan-500: #06b6d4;
   --cyan-50: #ecfeff;
+  --accent-green: #16a34a;
+  --accent-green-bg: #f0fdf4;
   --grid-stroke: #e2e5e9;
   --axis-stroke: #94a3b8;
   --track-bg: #e2e5e9;
@@ -82,6 +84,8 @@
   --yellow-50: rgba(245,158,11,0.08);
   --purple-50: rgba(139,92,246,0.08);
   --cyan-50: rgba(6,182,212,0.08);
+  --accent-green: #4ade80;
+  --accent-green-bg: rgba(34,197,94,0.12);
   --grid-stroke: #252836;
   --axis-stroke: #64748b;
   --track-bg: #252836;
