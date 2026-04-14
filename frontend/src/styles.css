@@ -1176,6 +1176,11 @@ body {
   color: var(--text-primary);
 }
 
+.ca-scenario-highlight {
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 2px var(--green-50);
+}
+
 .ca-green { color: var(--green-600); }
 .ca-blue { color: #3b82f6; }
 .ca-red { color: #ef4444; }

@@ -1405,13 +1405,18 @@ function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, 
   );
 }
 
+const VALID_CA_TABS = ["breakdown", "trends", "scenarios"];
+
 function CostAnalyticsPage({ task, seed, previewProfile, liveDashboard }) {
   const location = useLocation();
-  const queryTab = new URLSearchParams(location.search).get("tab");
-  const [activeTab, setActiveTab] = useState(queryTab || "breakdown");
+  const params = new URLSearchParams(location.search);
+  const queryTab = params.get("tab");
+  const queryScenario = params.get("scenario");
+  const initialTab = VALID_CA_TABS.includes(queryTab) ? queryTab : "breakdown";
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
-    if (queryTab && queryTab !== activeTab) setActiveTab(queryTab);
+    if (queryTab && VALID_CA_TABS.includes(queryTab) && queryTab !== activeTab) setActiveTab(queryTab);
   }, [queryTab]);
   const [scenarios, setScenarios] = useState({});
   const [scenariosLoading, setScenariosLoading] = useState(false);
@@ -1639,7 +1644,7 @@ function CostAnalyticsPage({ task, seed, previewProfile, liveDashboard }) {
                 const totalWaste = Object.values(ws).reduce((s, v) => s + v, 0);
                 const barData = [{ name: "Cost", current: cur, target: tgt, savings: max }];
                 return (
-                  <SectionCard key={t} title={TASK_META[t]?.title || toTitleCase(t)} className="ca-scenario-card">
+                  <SectionCard key={t} title={TASK_META[t]?.title || toTitleCase(t)} className={`ca-scenario-card ${queryScenario === t ? "ca-scenario-highlight" : ""}`}>
                     <p className="ca-scenario-desc">{TASK_META[t]?.description}</p>
                     <div className="ca-scenario-kpis">
                       <div className="ca-scenario-kpi">
