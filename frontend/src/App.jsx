@@ -1696,6 +1696,42 @@ function StubPage({ icon, title, description }) {
   );
 }
 
+function routeLabel(pathname) {
+  const path = String(pathname || "");
+  if (path.startsWith("/overview")) return "Overview";
+  if (path.startsWith("/resources")) return "Resource Inventory";
+  if (path.startsWith("/actions") || path.startsWith("/waste")) return "Action Center";
+  if (path.startsWith("/cost-analytics")) return "Cost Analytics";
+  if (path.startsWith("/use-cases")) return "Scenario Lab";
+  if (path.startsWith("/rl-status")) return "Agent + RL";
+  return "Dashboard";
+}
+
+function CommandRail({ health, pageLabel, taskName, seed, mode, recommendationCount, appliedActions, potentialSavings, activeStep }) {
+  const healthState = health === "online" ? "ok" : health === "offline" ? "down" : "checking";
+  const healthLabel = health === "online" ? "API Online" : health === "offline" ? "API Offline" : "API Checking";
+  return (
+    <div className="command-rail" role="status" aria-live="polite">
+      <div className="command-rail-main">
+        <span className={`command-pill command-pill-${healthState}`}>
+          <span className="command-dot" />
+          {healthLabel}
+        </span>
+        <span className="command-pill command-pill-neutral">{pageLabel}</span>
+        <span className="command-pill command-pill-soft">Scenario {toTitleCase(taskName)}</span>
+        <span className="command-pill command-pill-soft">Seed {String(seed).trim() || "-"}</span>
+      </div>
+      <div className="command-rail-stats">
+        <span className="command-stat"><strong>{recommendationCount}</strong> recs</span>
+        <span className="command-stat"><strong>{appliedActions}</strong> applied</span>
+        <span className="command-stat"><strong>{fmtMoney(potentialSavings)}</strong> potential</span>
+        <span className="command-stat"><strong>{activeStep}</strong> step</span>
+        <span className="command-stat command-stat-mode">Mode {toTitleCase(mode)}</span>
+      </div>
+    </div>
+  );
+}
+
 function Sidebar({ sidebarOpen, onToggleSidebar, theme, onToggleTheme }) {
   return (
     <aside className={`sidebar ${sidebarOpen ? "open" : "collapsed"}`}>
@@ -1707,7 +1743,12 @@ function Sidebar({ sidebarOpen, onToggleSidebar, theme, onToggleTheme }) {
             <span>Optimization Console</span>
           </div>
         )}
-        <button className="sidebar-toggle" onClick={onToggleSidebar} aria-label="Toggle sidebar">
+        <button
+          className="sidebar-toggle"
+          onClick={onToggleSidebar}
+          aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             {sidebarOpen ? <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></> : <><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></>}
           </svg>
@@ -1716,52 +1757,57 @@ function Sidebar({ sidebarOpen, onToggleSidebar, theme, onToggleTheme }) {
 
       <nav className="sidebar-nav" aria-label="Main navigation">
         <p className="sidebar-section-label">{sidebarOpen ? "ANALYTICS" : ""}</p>
-        <NavLink to="/overview" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+        <NavLink to="/overview" title="Overview" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="overview" />
           {sidebarOpen && <span>Overview</span>}
         </NavLink>
-        <NavLink to="/resources" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+        <NavLink to="/resources" title="Resource Inventory" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="resources" />
           {sidebarOpen && <span>Resources</span>}
         </NavLink>
-        <NavLink to="/cost-analytics" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+        <NavLink to="/cost-analytics" title="Cost Analytics" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="analytics" />
           {sidebarOpen && <span>Cost Analytics</span>}
         </NavLink>
 
         <p className="sidebar-section-label">{sidebarOpen ? "OPERATIONS" : ""}</p>
-        <NavLink to="/waste" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+        <NavLink to="/waste" title="Waste Detector" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="waste" />
           {sidebarOpen && <span>Waste Detector</span>}
         </NavLink>
-        <NavLink to="/actions" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+        <NavLink to="/actions" title="Action Center" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="actioncenter" />
           {sidebarOpen && <span>Action Center</span>}
         </NavLink>
 
         <p className="sidebar-section-label">{sidebarOpen ? "SCENARIOS" : ""}</p>
-        <NavLink to="/use-cases/cleanup" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+        <NavLink to="/use-cases/cleanup" title="Cleanup" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="cleanup" />
           {sidebarOpen && <span>Cleanup</span>}
         </NavLink>
-        <NavLink to="/use-cases/rightsize" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+        <NavLink to="/use-cases/rightsize" title="Rightsize" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="rightsize" />
           {sidebarOpen && <span>Rightsize</span>}
         </NavLink>
-        <NavLink to="/use-cases/full_optimization" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+        <NavLink to="/use-cases/full_optimization" title="Full Optimization" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="optimization" />
           {sidebarOpen && <span>Full Optimization</span>}
         </NavLink>
 
         <p className="sidebar-section-label">{sidebarOpen ? "SYSTEM" : ""}</p>
-        <NavLink to="/rl-status" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+        <NavLink to="/rl-status" title="Agent and RL Status" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="agent" />
           {sidebarOpen && <span>Agent + RL</span>}
         </NavLink>
       </nav>
 
       <div className="sidebar-footer">
-        <button className="theme-toggle-btn" onClick={onToggleTheme} aria-label="Toggle theme">
+        <button
+          className="theme-toggle-btn"
+          onClick={onToggleTheme}
+          aria-label="Toggle theme"
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        >
           <IconSvg name={theme === "dark" ? "sun" : "moon"} />
           {sidebarOpen && <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>}
         </button>
@@ -1772,6 +1818,7 @@ function Sidebar({ sidebarOpen, onToggleSidebar, theme, onToggleTheme }) {
 
 function AppShell() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [theme, setTheme] = useState(() => {
     try {
@@ -1779,7 +1826,12 @@ function AppShell() {
       return stored === "dark" ? "dark" : "light";
     } catch { return "light"; }
   });
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth > 1024;
+    }
+    return true;
+  });
   const [seed, setSeed] = useState("777");
   const [task, setTask] = useState("full_optimization");
   const [health, setHealth] = useState("checking");
@@ -1801,6 +1853,12 @@ function AppShell() {
     try { localStorage.setItem("cc-theme", theme); } catch {}
   }, [theme]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname]);
+
   function toggleTheme() {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   }
@@ -1812,6 +1870,9 @@ function AppShell() {
   const optimizationPressure = currentCost > 0 ? Math.min(100, (potentialSavings / currentCost) * 100) : 0;
   const currentTaskName = activeProfile?.task_name || task;
   const activeStep = Number(activeProfile?.step_count || 0);
+  const recommendationCount = liveDashboard?.recommendations?.length || 0;
+  const appliedActions = (liveDashboard?.action_history || []).filter((item) => item.ok && item.executed).length;
+  const runtimeMode = activeProfile?.mode || previewProfile?.mode || "preview";
 
   useEffect(() => {
     async function bootstrap() {
@@ -1900,7 +1961,19 @@ function AppShell() {
     <div className="app-layout">
       <Sidebar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} theme={theme} onToggleTheme={toggleTheme} />
       <main className="main-content">
-        <Routes>
+        <CommandRail
+          health={health}
+          pageLabel={routeLabel(location.pathname)}
+          taskName={currentTaskName}
+          seed={seed}
+          mode={runtimeMode}
+          recommendationCount={recommendationCount}
+          appliedActions={appliedActions}
+          potentialSavings={potentialSavings}
+          activeStep={activeStep}
+        />
+        <div className="route-canvas">
+          <Routes>
           <Route path="/" element={<Navigate to="/overview" replace />} />
           <Route path="/overview" element={
             <OverviewPage
@@ -1951,7 +2024,8 @@ function AppShell() {
             </Suspense>
           } />
           <Route path="*" element={<Navigate to="/overview" replace />} />
-        </Routes>
+          </Routes>
+        </div>
       </main>
     </div>
   );
