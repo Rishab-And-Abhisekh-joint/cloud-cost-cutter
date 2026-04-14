@@ -1047,9 +1047,10 @@ function ResourceInventoryPage({ task, seed }) {
   const rows = useMemo(() => {
     return resources.map((r) => {
       const status = deriveResourceStatus(r);
+      const name = r.tags?.Name || r.tags?.name || r.resource_id.replace(/^(i|vol|snap|db|lb|eip)-full-/, `${resourceTypeLabel(r.resource_type)} `);
       return {
         resource_id: r.resource_id,
-        name: r.resource_id,
+        name,
         type: r.resource_type,
         typeLabel: resourceTypeLabel(r.resource_type),
         monthly_cost: r.monthly_cost,
@@ -1071,7 +1072,7 @@ function ResourceInventoryPage({ task, seed }) {
     if (filters.status) result = result.filter((r) => r.status === filters.status);
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter((r) => r.resource_id.toLowerCase().includes(q) || r.typeLabel.toLowerCase().includes(q));
+      result = result.filter((r) => r.resource_id.toLowerCase().includes(q) || r.name.toLowerCase().includes(q));
     }
     return result;
   }, [rows, filters, search]);
@@ -1101,8 +1102,9 @@ function ResourceInventoryPage({ task, seed }) {
   ];
 
   const columns = [
-    { key: "resource_id", header: "Resource ID", width: "180px", render: (v) => <span className="ri-id">{v}</span> },
-    { key: "typeLabel", header: "Type", width: "120px" },
+    { key: "resource_id", header: "Resource ID", width: "140px", render: (v) => <span className="ri-id">{v}</span> },
+    { key: "name", header: "Name", width: "150px", render: (v) => <span className="ri-name">{v}</span> },
+    { key: "typeLabel", header: "Type", width: "110px" },
     { key: "monthly_cost", header: "Monthly Cost", align: "right", width: "110px", render: (v) => <span className="ri-cost">{fmtMoney(v)}</span>, sortValue: (row) => row.monthly_cost },
     { key: "status", header: "Status", width: "120px", render: (_, row) => <StatusBadge level={row.statusLevel} label={toTitleCase(row.status)} /> },
     { key: "waste_signal", header: "Waste", width: "80px", align: "right", render: (v) => {
@@ -1117,6 +1119,7 @@ function ResourceInventoryPage({ task, seed }) {
     <div className="ri-detail">
       <div className="ri-detail-grid">
         <div><span className="ri-detail-label">Resource ID</span><span className="ri-detail-value">{row.resource_id}</span></div>
+        <div><span className="ri-detail-label">Name</span><span className="ri-detail-value">{row.name}</span></div>
         <div><span className="ri-detail-label">Type</span><span className="ri-detail-value">{row.typeLabel}</span></div>
         <div><span className="ri-detail-label">Monthly Cost</span><span className="ri-detail-value">{fmtMoney(row.monthly_cost)}</span></div>
         <div><span className="ri-detail-label">Status</span><span className="ri-detail-value">{toTitleCase(row.rawStatus)}</span></div>
@@ -1168,7 +1171,7 @@ function ResourceInventoryPage({ task, seed }) {
           filters={filterDefs}
           values={filters}
           onChange={(key, val) => setFilters((f) => ({ ...f, [key]: val }))}
-          searchPlaceholder="Search by ID or type..."
+          searchPlaceholder="Search by name or ID..."
           searchValue={search}
           onSearchChange={setSearch}
           onClearAll={() => { setFilters({}); setSearch(""); }}

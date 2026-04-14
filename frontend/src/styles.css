@@ -589,6 +589,12 @@ body {
   color: var(--text-primary);
 }
 
+.ri-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
 .ri-cost {
   font-weight: 600;
   color: var(--text-primary);
