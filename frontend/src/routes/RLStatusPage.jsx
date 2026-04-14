@@ -51,7 +51,7 @@ export default function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }
         </article>
       </section>
 
-      <article className="ops-card wide rl-notes-card">
+      <article className="rl-notes-card">
         <h3>Backend Notes</h3>
         {rlStatus?.notes?.length ? (
           <ul className="rl-note-list">

@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
-import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate, useLocation } from "react-router-dom";
 
 const TASKS = ["cleanup", "rightsize", "full_optimization"];
 const DEFAULT_PROD_API_BASE_URL = "https://cloud-cost-env-api-production.up.railway.app";
@@ -12,14 +12,17 @@ const TASK_META = {
   cleanup: {
     title: "Cleanup Sweep",
     description: "Quick wins: remove unattached resources, stale snapshots, and idle artifacts.",
+    icon: "\u{1F9F9}",
   },
   rightsize: {
     title: "Rightsize Track",
     description: "Capacity tuning for compute and data tiers while preserving SLA safety.",
+    icon: "\u{2696}\u{FE0F}",
   },
   full_optimization: {
     title: "Full Optimization",
     description: "Max savings path combining cleanup, rightsizing, scheduling, and guarded apply actions.",
+    icon: "\u{1F680}",
   },
 };
 
@@ -130,35 +133,90 @@ async function request(path, options = {}) {
   throw lastError || new Error("Request failed");
 }
 
-function StatCard({ label, value, helper }) {
+function IconSvg({ name }) {
+  const icons = {
+    overview: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>
+    ),
+    cleanup: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      </svg>
+    ),
+    rightsize: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
+      </svg>
+    ),
+    optimization: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+      </svg>
+    ),
+    agent: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    ),
+    spend: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      </svg>
+    ),
+    savings: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+        <polyline points="17 6 23 6 23 12" />
+      </svg>
+    ),
+    actions: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+      </svg>
+    ),
+    pressure: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    ),
+  };
+  return icons[name] || null;
+}
+
+function StatCard({ label, value, helper, icon }) {
   return (
     <article className="kpi-card">
-      <p className="kpi-label">{label}</p>
-      <p className="kpi-value">{value}</p>
-      {helper ? <p className="kpi-helper">{helper}</p> : null}
+      {icon ? <span className="kpi-icon"><IconSvg name={icon} /></span> : null}
+      <div className="kpi-content">
+        <p className="kpi-label">{label}</p>
+        <p className="kpi-value">{value}</p>
+        {helper ? <p className="kpi-helper">{helper}</p> : null}
+      </div>
     </article>
   );
 }
 
 function recLabel(actionType) {
-  if (actionType === "stop_instance") {
-    return "Stop Instance";
-  }
-  if (actionType === "terminate_instance") {
-    return "Terminate Instance";
-  }
-  if (actionType === "release_eip") {
-    return "Release EIP";
-  }
-  if (actionType === "delete_snapshot") {
-    return "Delete Snapshot";
-  }
-  if (actionType === "delete_load_balancer") {
-    return "Delete Load Balancer";
-  }
-  if (actionType === "rightsize_instance") {
-    return "Rightsize Instance";
-  }
+  if (actionType === "stop_instance") return "Stop Instance";
+  if (actionType === "terminate_instance") return "Terminate Instance";
+  if (actionType === "release_eip") return "Release EIP";
+  if (actionType === "delete_snapshot") return "Delete Snapshot";
+  if (actionType === "delete_load_balancer") return "Delete Load Balancer";
+  if (actionType === "rightsize_instance") return "Rightsize Instance";
   return "Delete Volume";
 }
 
@@ -171,24 +229,12 @@ function liveDashboardPath(task, seed) {
 }
 
 function signalLabel(actionType) {
-  if (actionType === "stop_instance") {
-    return "Compute";
-  }
-  if (actionType === "terminate_instance") {
-    return "Compute";
-  }
-  if (actionType === "release_eip") {
-    return "Network";
-  }
-  if (actionType === "delete_snapshot") {
-    return "Snapshot";
-  }
-  if (actionType === "delete_load_balancer") {
-    return "Network";
-  }
-  if (actionType === "rightsize_instance") {
-    return "Compute";
-  }
+  if (actionType === "stop_instance") return "Compute";
+  if (actionType === "terminate_instance") return "Compute";
+  if (actionType === "release_eip") return "Network";
+  if (actionType === "delete_snapshot") return "Snapshot";
+  if (actionType === "delete_load_balancer") return "Network";
+  if (actionType === "rightsize_instance") return "Compute";
   return "Storage";
 }
 
@@ -211,7 +257,6 @@ function ProfileCard({ title, profile }) {
   const cost = profile.cost || {};
 
   const wasteTotal = sumValues(wasteSignals);
-  const savingsGap = Math.max(0, Number(cost.current_monthly_spend || 0) - Number(cost.target_monthly_spend || 0));
   const criticalDensity =
     Number(resources.compute || 0) > 0
       ? (Number(safety.prod_critical_compute || 0) / Number(resources.compute || 1)) * 100
@@ -222,9 +267,7 @@ function ProfileCard({ title, profile }) {
       <header className="profile-header">
         <div>
           <h3>{title}</h3>
-          <p>
-            {profile.task_name} · seed {profile.seed}
-          </p>
+          <p>{profile.task_name} · seed {profile.seed}</p>
         </div>
         <span className={`profile-mode profile-mode-${profile.mode}`}>{profile.mode}</span>
       </header>
@@ -240,7 +283,7 @@ function ProfileCard({ title, profile }) {
         </div>
         <div className="profile-metric">
           <p>Savings Gap</p>
-          <strong>{fmtMoney(savingsGap)}</strong>
+          <strong>{fmtMoney(Math.max(0, Number(cost.current_monthly_spend || 0) - Number(cost.target_monthly_spend || 0)))}</strong>
         </div>
         <div className="profile-metric">
           <p>Max Savings (8 steps)</p>
@@ -318,9 +361,8 @@ function SavingsTrend({ recommendations, actionHistory }) {
   return (
     <div className="savings-trend">
       <p className="trend-note">
-        Showing top {ranked.length} opportunities · {executedCount} applied successfully this run
+        Showing top {ranked.length} opportunities · {executedCount} applied successfully
       </p>
-
       <div className="trend-list" role="list" aria-label="Top savings opportunities">
         {ranked.map((entry, index) => {
           const savings = Number(entry.estimated_monthly_savings_usd || 0);
@@ -369,99 +411,116 @@ function OverviewPage({
 }) {
   return (
     <>
-      <section className="hero-panel">
+      <div className="page-header">
         <div>
-          <p className="hero-kicker">Cloud Consulting Services</p>
-          <h2 className="hero-title">Modern IT And Google Cloud Operations Workspace</h2>
-          <p className="hero-copy">
-            Built for cloud teams to model migration outcomes, evaluate platform efficiency, and execute high-confidence optimization actions from one command center.
-          </p>
-          <ul className="hero-badges" aria-label="Core capabilities">
-            <li>Cloud Migration</li>
-            <li>DevOps Advisory</li>
-            <li>Cost Optimization</li>
-          </ul>
+          <h2 className="page-title">Cloud Cost Optimization Dashboard</h2>
+          <p className="page-subtitle">Seed {activeProfile?.seed || seed} · {toTitleCase(currentTaskName)}</p>
         </div>
-        <div className="pressure-panel">
-          <p>Optimization Pressure</p>
-          <strong>{fmtPercent(optimizationPressure)}</strong>
-          <div className="pressure-track">
-            <div className="pressure-fill" style={{ width: `${optimizationPressure}%` }} />
-          </div>
-          <small>
-            Potential savings {fmtMoney(potentialSavings)} of current spend {fmtMoney(currentCost)}
-          </small>
+        <div className="page-header-actions">
+          <button type="button" onClick={onRefreshPreview} disabled={loading}>Refresh Preview</button>
+          <button type="button" className="solid" onClick={onStartEpisode} disabled={loading}>Start Episode</button>
         </div>
-      </section>
+      </div>
 
       <section className="kpi-grid">
-        <StatCard label="Active Task" value={toTitleCase(currentTaskName)} helper={`step ${activeStep}`} />
+        <StatCard icon="pressure" label="Optimization Pressure" value={fmtPercent(optimizationPressure)} helper={`step ${activeStep}`} />
+        <StatCard icon="spend" label="Monthly Spend" value={fmtMoney(currentCost)} helper={activeProfile?.seed ? `seed ${activeProfile.seed}` : "no active episode"} />
+        <StatCard icon="savings" label="Potential Savings" value={fmtMoney(potentialSavings)} helper="ranked action estimate" />
         <StatCard
-          label="Monthly Spend"
-          value={fmtMoney(currentCost)}
-          helper={activeProfile?.seed ? `seed ${activeProfile.seed}` : "no active episode"}
-        />
-        <StatCard label="Potential Savings" value={fmtMoney(potentialSavings)} helper="ranked action estimate" />
-        <StatCard
+          icon="actions"
           label="Actions Logged"
           value={String(liveDashboard?.action_history?.length || 0)}
           helper={liveDashboard?.can_apply_actions ? "apply enabled" : "dry-run mode"}
         />
       </section>
 
-      <section className="studio-panel">
-        <div className="studio-head">
-          <div>
-            <p className="eyebrow">Scenario Studio</p>
-            <h2>Configure Deterministic Benchmark Runs</h2>
+      <div className="charts-row">
+        <article className="card">
+          <div className="card-header">
+            <h3>Savings Opportunity Spectrum</h3>
           </div>
-          <span className="studio-meta">Benchmark Configuration</span>
-        </div>
+          <div className="card-body">
+            <SavingsTrend recommendations={liveDashboard?.recommendations} actionHistory={liveDashboard?.action_history} />
+          </div>
+        </article>
 
+        <article className="card">
+          <div className="card-header">
+            <h3>Optimization Progress</h3>
+          </div>
+          <div className="card-body progress-ring-wrap">
+            <div className="progress-ring">
+              <svg viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                <circle
+                  cx="60" cy="60" r="52" fill="none"
+                  stroke="#22c55e" strokeWidth="10"
+                  strokeDasharray={`${optimizationPressure * 3.27} 327`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 60 60)"
+                  className="progress-ring-circle"
+                />
+              </svg>
+              <div className="progress-ring-label">
+                <strong>{fmtPercent(optimizationPressure)}</strong>
+                <span>Overall</span>
+              </div>
+            </div>
+            <div className="progress-legend">
+              <div><span className="legend-dot" style={{ background: "#22c55e" }} /> Savings Found</div>
+              <div><span className="legend-dot" style={{ background: "#3b82f6" }} /> Actions Applied</div>
+              <div><span className="legend-dot" style={{ background: "#f59e0b" }} /> Remaining Gap</div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <section className="studio-panel">
+        <div className="card-header">
+          <h3>Scenario Studio</h3>
+          <span className="card-badge">Configure</span>
+        </div>
         <div className="studio-controls">
           <div className="field-group">
             <label htmlFor="task">Task</label>
             <select id="task" value={task} onChange={(e) => onTaskChange(e.target.value)}>
               {TASKS.map((entry) => (
-                <option key={entry} value={entry}>
-                  {toTitleCase(entry)}
-                </option>
+                <option key={entry} value={entry}>{toTitleCase(entry)}</option>
               ))}
             </select>
           </div>
-
           <div className="field-group">
             <label htmlFor="seed">Seed</label>
             <input id="seed" value={seed} onChange={(e) => onSeedChange(e.target.value)} />
           </div>
-
           <div className="actions">
-            <button type="button" onClick={onRefreshPreview} disabled={loading}>
-              Preview Scenario
-            </button>
-            <button type="button" className="solid" onClick={onStartEpisode} disabled={loading}>
-              Start Episode
-            </button>
-            <button type="button" onClick={() => onOpenUseCase(task)}>
-              Open Use-Case Page
-            </button>
+            <button type="button" onClick={onRefreshPreview} disabled={loading}>Preview Scenario</button>
+            <button type="button" className="solid" onClick={onStartEpisode} disabled={loading}>Start Episode</button>
+            <button type="button" onClick={() => onOpenUseCase(task)}>Open Use-Case</button>
           </div>
         </div>
       </section>
 
       {error ? <p className="error-text">{error}</p> : null}
 
-      <section className="usecase-grid">
-        {TASKS.map((entry) => (
-          <article key={entry} className="usecase-card">
-            <p className="eyebrow">Use Case</p>
-            <h3>{TASK_META[entry].title}</h3>
-            <p>{TASK_META[entry].description}</p>
-            <button type="button" onClick={() => onOpenUseCase(entry)}>
-              View {toTitleCase(entry)} Charts
-            </button>
-          </article>
-        ))}
+      <section className="tab-section">
+        <div className="tab-header">
+          <h3>Use Cases</h3>
+        </div>
+        <div className="usecase-table">
+          <div className="table-header">
+            <span>Use Case</span>
+            <span>Description</span>
+            <span>Action</span>
+          </div>
+          {TASKS.map((entry) => (
+            <div key={entry} className="table-row">
+              <span className="table-cell-title">{TASK_META[entry].title}</span>
+              <span className="table-cell-desc">{TASK_META[entry].description}</span>
+              <span><button type="button" onClick={() => onOpenUseCase(entry)}>View Charts</button></span>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="profile-stack">
@@ -470,11 +529,8 @@ function OverviewPage({
       </section>
 
       <section className="ops-shell">
-        <div className="ops-top">
-          <div>
-            <p className="eyebrow">Live Dashboard</p>
-            <h2>Optimization Queue And Execution Console</h2>
-          </div>
+        <div className="card-header">
+          <h3>Live Operations Console</h3>
           <button type="button" onClick={() => onRefreshLive(true)} disabled={liveLoading}>
             {liveLoading ? "Refreshing..." : "Refresh Live"}
           </button>
@@ -484,114 +540,78 @@ function OverviewPage({
         {liveMessage ? <p className="live-message">{liveMessage}</p> : null}
 
         <div className="kpi-grid compact">
-          <StatCard
-            label="Live Connection"
-            value={liveDashboard?.connected ? "connected" : "offline"}
-            helper={liveDashboard?.region || "unknown region"}
-          />
-          <StatCard
-            label="Potential Savings"
-            value={fmtMoney(liveDashboard?.potential_monthly_savings_usd || 0)}
-            helper="monthly estimate"
-          />
-          <StatCard
-            label="Can Apply"
-            value={liveDashboard?.can_apply_actions ? "yes" : "no"}
-            helper="toggle via LIVE_DASHBOARD_ALLOW_APPLY"
-          />
-          <StatCard
-            label="Action History"
-            value={String(liveDashboard?.action_history?.length || 0)}
-            helper="latest 20 events"
-          />
+          <StatCard label="Live Connection" value={liveDashboard?.connected ? "Connected" : "Offline"} helper={liveDashboard?.region || "unknown region"} />
+          <StatCard label="Potential Savings" value={fmtMoney(liveDashboard?.potential_monthly_savings_usd || 0)} helper="monthly estimate" />
+          <StatCard label="Can Apply" value={liveDashboard?.can_apply_actions ? "Yes" : "No"} helper="toggle via env var" />
+          <StatCard label="Action History" value={String(liveDashboard?.action_history?.length || 0)} helper="latest 20 events" />
         </div>
 
         <div className="ops-grid">
-          <article className="ops-card">
-            <h3>Savings Opportunity Spectrum</h3>
-            <SavingsTrend recommendations={liveDashboard?.recommendations} actionHistory={liveDashboard?.action_history} />
+          <article className="card">
+            <div className="card-header"><h3>Prioritized Recommendations</h3></div>
+            <div className="card-body">
+              {liveDashboard?.recommendations?.length ? (
+                <ul className="rec-list">
+                  {liveDashboard.recommendations.map((rec) => {
+                    const dryKey = `${rec.action_type}:${rec.resource_id}:dry`;
+                    const applyKey = `${rec.action_type}:${rec.resource_id}:apply`;
+                    return (
+                      <li className="rec-item" key={`${rec.action_type}:${rec.resource_id}`}>
+                        <div className="rec-copy">
+                          <p className="rec-title">{recLabel(rec.action_type)} · {rec.resource_name}</p>
+                          <p className="rec-badge">{signalLabel(rec.action_type)}</p>
+                          <p className="rec-meta">{rec.reason}</p>
+                          <p className="rec-meta rec-metrics">
+                            <span className={`status-chip status-${String(rec.risk || "low").toLowerCase()}`}>Risk {rec.risk}</span>
+                            <span>Est. savings {fmtMoney(rec.estimated_monthly_savings_usd)}</span>
+                          </p>
+                        </div>
+                        <div className="rec-actions">
+                          <button type="button" disabled={liveBusyKey !== ""} onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, false)}>
+                            {liveBusyKey === dryKey ? "Running..." : "Dry Run"}
+                          </button>
+                          <button type="button" className="solid" disabled={liveBusyKey !== "" || !liveDashboard?.can_apply_actions} onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, true)}>
+                            {liveBusyKey === applyKey ? "Applying..." : "Apply"}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="empty-text">No recommendations yet. Start an episode and refresh live data.</p>
+              )}
+            </div>
           </article>
 
-          <article className="ops-card">
-            <h3>Prioritized Recommendations</h3>
-            {liveDashboard?.recommendations?.length ? (
-              <ul className="rec-list">
-                {liveDashboard.recommendations.map((rec) => {
-                  const dryKey = `${rec.action_type}:${rec.resource_id}:dry`;
-                  const applyKey = `${rec.action_type}:${rec.resource_id}:apply`;
-
-                  return (
-                    <li className="rec-item" key={`${rec.action_type}:${rec.resource_id}`}>
-                      <div className="rec-copy">
-                        <p className="rec-title">
-                          {recLabel(rec.action_type)} · {rec.resource_name}
-                        </p>
-                        <p className="rec-badge">{signalLabel(rec.action_type)}</p>
-                        <p className="rec-meta">{rec.reason}</p>
-                        <p className="rec-meta rec-metrics">
-                          <span className={`risk-chip risk-${String(rec.risk || "low").toLowerCase()}`}>
-                            Risk {rec.risk}
-                          </span>
-                          <span>Est. savings {fmtMoney(rec.estimated_monthly_savings_usd)}</span>
-                        </p>
-                      </div>
-                      <div className="rec-actions">
-                        <button
-                          type="button"
-                          disabled={liveBusyKey !== ""}
-                          onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, false)}
-                        >
-                          {liveBusyKey === dryKey ? "Running..." : "Dry Run"}
-                        </button>
-                        <button
-                          type="button"
-                          className="solid"
-                          disabled={liveBusyKey !== "" || !liveDashboard?.can_apply_actions}
-                          onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, true)}
-                        >
-                          {liveBusyKey === applyKey ? "Applying..." : "Apply"}
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="empty-text">No recommendations yet. Start an episode and refresh live data.</p>
-            )}
-          </article>
-
-          <article className="ops-card">
-            <h3>Recent Actions</h3>
-            {liveDashboard?.action_history?.length ? (
-              <ul className="history-list">
-                {liveDashboard.action_history
-                  .slice()
-                  .reverse()
-                  .map((event, idx) => (
+          <article className="card">
+            <div className="card-header"><h3>Recent Actions</h3></div>
+            <div className="card-body">
+              {liveDashboard?.action_history?.length ? (
+                <ul className="history-list">
+                  {liveDashboard.action_history.slice().reverse().map((event, idx) => (
                     <li className="history-item" key={`${event.timestamp}-${event.resource_id}-${idx}`}>
-                      <p>
-                        <strong>{recLabel(event.action_type)}</strong> on {event.resource_id}
-                      </p>
+                      <p><strong>{recLabel(event.action_type)}</strong> on {event.resource_id}</p>
                       <p className="history-meta-line">
-                        <span className={`history-chip ${event.ok ? "history-chip-ok" : "history-chip-fail"}`}>
-                          {event.ok ? "ok" : "failed"}
-                        </span>
+                        <span className={`status-chip ${event.ok ? "status-active" : "status-high"}`}>{event.ok ? "ok" : "failed"}</span>
                         <span>{event.dry_run ? "Dry run" : "Executed"}</span>
                         <span>savings {fmtMoney(event.estimated_monthly_savings_usd)}</span>
                       </p>
                       <p>{event.message}</p>
                     </li>
                   ))}
-              </ul>
-            ) : (
-              <p className="empty-text">No actions recorded yet.</p>
-            )}
+                </ul>
+              ) : (
+                <p className="empty-text">No actions recorded yet.</p>
+              )}
+            </div>
           </article>
 
-          <article className="ops-card wide">
-            <h3>Resource Footprint Map</h3>
-            <ResourceMap counts={liveDashboard?.resource_counts} />
+          <article className="card wide">
+            <div className="card-header"><h3>Resource Footprint Map</h3></div>
+            <div className="card-body">
+              <ResourceMap counts={liveDashboard?.resource_counts} />
+            </div>
           </article>
         </div>
       </section>
@@ -599,9 +619,61 @@ function OverviewPage({
   );
 }
 
+function Sidebar({ sidebarOpen, onToggleSidebar }) {
+  const location = useLocation();
+
+  return (
+    <aside className={`sidebar ${sidebarOpen ? "open" : "collapsed"}`}>
+      <div className="sidebar-brand">
+        <div className="brand-mark">CC</div>
+        {sidebarOpen && (
+          <div className="brand-text">
+            <strong>CloudCost</strong>
+            <span>Optimization Console</span>
+          </div>
+        )}
+        <button className="sidebar-toggle" onClick={onToggleSidebar} aria-label="Toggle sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {sidebarOpen ? <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></> : <><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></>}
+          </svg>
+        </button>
+      </div>
+
+      <nav className="sidebar-nav" aria-label="Main navigation">
+        <p className="sidebar-section-label">{sidebarOpen ? "MAIN MENU" : ""}</p>
+        <NavLink to="/overview" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+          <IconSvg name="overview" />
+          {sidebarOpen && <span>Overview</span>}
+        </NavLink>
+
+        <p className="sidebar-section-label">{sidebarOpen ? "USE CASES" : ""}</p>
+        <NavLink to="/use-cases/cleanup" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+          <IconSvg name="cleanup" />
+          {sidebarOpen && <span>Cleanup</span>}
+        </NavLink>
+        <NavLink to="/use-cases/rightsize" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+          <IconSvg name="rightsize" />
+          {sidebarOpen && <span>Rightsize</span>}
+        </NavLink>
+        <NavLink to="/use-cases/full_optimization" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+          <IconSvg name="optimization" />
+          {sidebarOpen && <span>Full Optimization</span>}
+        </NavLink>
+
+        <p className="sidebar-section-label">{sidebarOpen ? "SYSTEM" : ""}</p>
+        <NavLink to="/rl-status" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+          <IconSvg name="agent" />
+          {sidebarOpen && <span>Agent + RL</span>}
+        </NavLink>
+      </nav>
+    </aside>
+  );
+}
+
 function AppShell() {
   const navigate = useNavigate();
 
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [seed, setSeed] = useState("777");
   const [task, setTask] = useState("full_optimization");
   const [health, setHealth] = useState("checking");
@@ -625,6 +697,7 @@ function AppShell() {
   const optimizationPressure = currentCost > 0 ? Math.min(100, (potentialSavings / currentCost) * 100) : 0;
   const currentTaskName = activeProfile?.task_name || task;
   const activeStep = Number(activeProfile?.step_count || 0);
+
   useEffect(() => {
     async function bootstrap() {
       try {
@@ -633,81 +706,57 @@ function AppShell() {
       } catch {
         setHealth("offline");
       }
-
       try {
         const active = await request("/profile", { method: "GET" });
         setActiveProfile(active);
       } catch {
         setActiveProfile(null);
       }
-
       await refreshPreview(false, task, seed);
       await refreshLiveDashboard(false, task, seed);
       await refreshAgentStatus(false);
     }
-
     bootstrap();
   }, []);
 
   useEffect(() => {
     refreshPreview(false, task, seed);
     refreshLiveDashboard(false, task, seed);
-
     const timer = setInterval(() => {
       refreshLiveDashboard(false, task, seed);
     }, 15000);
-
     return () => clearInterval(timer);
   }, [task, seed]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      refreshAgentStatus(false);
-    }, 30000);
-
-    return () => clearInterval(timer);
-  }, []);
-
   async function refreshLiveDashboard(showSpinner = true, taskName = task, seedValue = seed) {
-    if (showSpinner) {
-      setLiveLoading(true);
-    }
+    if (showSpinner) setLiveLoading(true);
     setLiveError("");
-
     try {
-      const dashboard = await request(liveDashboardPath(taskName, seedValue), { method: "GET" });
-      setLiveDashboard(dashboard);
+      const data = await request(liveDashboardPath(taskName, seedValue), { method: "GET" });
+      setLiveDashboard(data);
     } catch (err) {
-      setLiveError(`Live dashboard failed: ${err.message}`);
+      setLiveError(`Live dashboard: ${err.message}`);
     } finally {
-      if (showSpinner) {
-        setLiveLoading(false);
-      }
+      if (showSpinner) setLiveLoading(false);
     }
   }
 
   async function refreshPreview(showSpinner = true, taskName = task, seedValue = seed) {
+    if (showSpinner) setLoading(true);
     setError("");
-    if (showSpinner) {
-      setLoading(true);
-    }
-
     try {
       const preview = await request(`/profile?task_name=${taskName}&seed=${seedValue}`, { method: "GET" });
       setPreviewProfile(preview);
     } catch (err) {
       setError(`Preview failed: ${err.message}`);
     } finally {
-      if (showSpinner) {
-        setLoading(false);
-      }
+      if (showSpinner) setLoading(false);
     }
   }
 
   async function startEpisode(taskName = task, seedValue = seed) {
     setError("");
     setLoading(true);
-
     try {
       await request(`/reset/${taskName}?seed=${seedValue}`, { method: "POST" });
       const active = await request("/profile", { method: "GET" });
@@ -727,20 +776,13 @@ function AppShell() {
     setLiveBusyKey(key);
     setLiveError("");
     setLiveMessage("");
-
     try {
       const result = await request("/live/action", {
         method: "POST",
-        body: JSON.stringify({
-          action_type: actionType,
-          resource_id: resourceId,
-          apply,
-        }),
+        body: JSON.stringify({ action_type: actionType, resource_id: resourceId, apply }),
       });
-
       setLiveMessage(result.message || "Action completed");
       await refreshLiveDashboard(false);
-
       try {
         const active = await request("/profile", { method: "GET" });
         setActiveProfile(active);
@@ -755,72 +797,32 @@ function AppShell() {
   }
 
   async function refreshAgentStatus(showSpinner = true) {
-    if (showSpinner) {
-      setRlLoading(true);
-    }
+    if (showSpinner) setRlLoading(true);
     setRlError("");
-
     try {
       const status = await request("/agent/status", { method: "GET" });
       setRlStatus(status);
     } catch (err) {
       setRlError(`Agent status failed: ${err.message}`);
     } finally {
-      if (showSpinner) {
-        setRlLoading(false);
-      }
+      if (showSpinner) setRlLoading(false);
     }
   }
 
   function handleTaskChange(nextTask) {
-    if (TASKS.includes(nextTask)) {
-      setTask(nextTask);
-    }
+    if (TASKS.includes(nextTask)) setTask(nextTask);
   }
 
   function openUseCase(nextTask) {
-    if (!TASKS.includes(nextTask)) {
-      return;
-    }
+    if (!TASKS.includes(nextTask)) return;
     setTask(nextTask);
     navigate(`/use-cases/${nextTask}`);
   }
 
   return (
-    <main className="ui-shell">
-      <div className="noise-layer" />
-      <div className="orb orb-a" />
-      <div className="orb orb-b" />
-
-      <header className="topbar">
-        <div className="brand-wrap">
-          <div className="brand-mark">CC</div>
-          <div>
-            <p className="eyebrow">Modern IT And Google Cloud Agency</p>
-            <h1>Cloud Consulting Services Intelligence Console</h1>
-          </div>
-        </div>
-      </header>
-
-      <nav className="main-nav" aria-label="Dashboard pages">
-        <NavLink to="/overview" className={({ isActive }) => `main-nav-link ${isActive ? "active" : ""}`}>
-          Overview
-        </NavLink>
-        {TASKS.map((entry) => (
-          <NavLink
-            key={entry}
-            to={`/use-cases/${entry}`}
-            className={({ isActive }) => `main-nav-link ${isActive ? "active" : ""}`}
-          >
-            {toTitleCase(entry)}
-          </NavLink>
-        ))}
-        <NavLink to="/rl-status" className={({ isActive }) => `main-nav-link ${isActive ? "active" : ""}`}>
-          Agent + RL
-        </NavLink>
-      </nav>
-
-      <section className="route-panel">
+    <div className="app-layout">
+      <Sidebar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <main className="main-content">
         <Routes>
           <Route path="/" element={<Navigate to="/overview" replace />} />
           <Route
@@ -881,19 +883,14 @@ function AppShell() {
             path="/rl-status"
             element={
               <Suspense fallback={<p className="chart-empty">Loading RL status...</p>}>
-                <LazyRLStatusPage
-                  rlStatus={rlStatus}
-                  rlLoading={rlLoading}
-                  rlError={rlError}
-                  onRefresh={refreshAgentStatus}
-                />
+                <LazyRLStatusPage rlStatus={rlStatus} rlLoading={rlLoading} rlError={rlError} onRefresh={refreshAgentStatus} />
               </Suspense>
             }
           />
           <Route path="*" element={<Navigate to="/overview" replace />} />
         </Routes>
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }
 
