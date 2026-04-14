@@ -19,19 +19,23 @@ A cloud cost optimization Reinforcement Learning environment built on the OpenEn
 - React SPA communicating with backend at `http://127.0.0.1:8000`
 - Uses Recharts for visualizations, React Router for navigation
 - `src/App.jsx` — Main app shell with live dashboard and scenario studio
-- **Design**: Dual-theme SaaS dashboard (light/dark) with sidebar navigation
-  - Layout: Fixed left sidebar (240px, collapsible) + scrollable main content area
+- `src/components/shared.jsx` — Reusable component primitives (DataTable, FilterBar, StatusBadge, MetricCard, RiskBadge, SectionCard, TabBar, ConfirmModal, EmptyState)
+- **Design**: Enterprise-grade dual-theme FinOps dashboard (Vantage/CloudZero-inspired)
+  - Layout: Fixed left sidebar (232px, collapsible) + scrollable main content area
+  - Sidebar sections: Analytics (Overview, Resources, Cost Analytics), Operations (Waste Detector, Action Center), Scenarios (Cleanup, Rightsize, Full Optimization), System (Agent + RL)
   - Theme toggle: Button in sidebar footer, persisted in localStorage (`cc-theme`)
-  - Light mode: #f3f4f6 body, #ffffff cards, #22c55e green accent
-  - Dark mode: #0f1117 body, #1a1d2e cards, same green accent, via `[data-theme="dark"]` CSS vars
-  - Typography: Inter font family, clean hierarchy
-  - Cards: 12px border-radius, subtle shadows, clean borders
-  - Enhanced graphics: Resource donut chart, waste signal gauges, cost breakdown bars, progress ring
-  - Charts: Green/blue/amber palette, theme-aware grid/axis/tooltip colors (via `useThemeColors()`)
-  - KPI cards with SVG icons, colored icon backgrounds
-  - Table-style use case listing, tabbed sections
+  - Light mode: Neutral slate (#f1f3f5 body, #ffffff cards), semantic accents (green=savings, red=waste, blue=info, amber=warning)
+  - Dark mode: Deep navy (#0c0e14 body, #171a24 cards), via `[data-theme="dark"]` CSS vars
+  - Typography: Inter font family, 13px base, dense line-heights for information density
+  - Cards: 10px border-radius, subtle shadows, clean borders
+  - DataTable component: Sortable columns, expandable rows, alternating row stripes, sticky headers
+  - FilterBar component: Dropdown filters, search input, compact labels
+  - Status badges: Critical/high/medium/low/success/info/neutral semantic variants
+  - MetricCard: Value + delta indicator (up/down arrows) + helper text
+  - Charts: Green/blue/amber/purple/cyan palette, theme-aware Recharts integration
   - Accessibility: Focus-visible outlines, responsive down to mobile
   - Plain CSS (no Tailwind) — all styles in `src/styles.css`
+  - Routes: /overview, /resources (stub), /waste (stub), /actions (stub), /cost-analytics (stub), /use-cases/:taskName, /rl-status
 
 ## Running Locally
 

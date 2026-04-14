@@ -112,54 +112,81 @@ async function request(path, options = {}) {
   throw lastError || new Error("Request failed");
 }
 
-function IconSvg({ name }) {
+function IconSvg({ name, size }) {
+  const s = size || 16;
   const icons = {
     overview: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1" />
         <rect x="14" y="3" width="7" height="7" rx="1" />
         <rect x="3" y="14" width="7" height="7" rx="1" />
         <rect x="14" y="14" width="7" height="7" rx="1" />
       </svg>
     ),
-    cleanup: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    resources: (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+        <line x1="6" y1="6" x2="6.01" y2="6" />
+        <line x1="6" y1="18" x2="6.01" y2="18" />
       </svg>
     ),
-    rightsize: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    waste: (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    ),
+    actioncenter: (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9 11 12 14 22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+      </svg>
+    ),
+    analytics: (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" />
         <line x1="12" y1="20" x2="12" y2="4" />
         <line x1="6" y1="20" x2="6" y2="14" />
       </svg>
     ),
+    cleanup: (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      </svg>
+    ),
+    rightsize: (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      </svg>
+    ),
     optimization: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
       </svg>
     ),
     agent: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
       </svg>
     ),
     spend: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" y1="1" x2="12" y2="23" />
         <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg>
     ),
     savings: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
         <polyline points="17 6 23 6 23 12" />
       </svg>
     ),
     actions: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
         <polyline points="14 2 14 8 20 8" />
         <line x1="16" y1="13" x2="8" y2="13" />
@@ -167,13 +194,13 @@ function IconSvg({ name }) {
       </svg>
     ),
     pressure: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
         <polyline points="12 6 12 12 16 14" />
       </svg>
     ),
     sun: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="5" />
         <line x1="12" y1="1" x2="12" y2="3" />
         <line x1="12" y1="21" x2="12" y2="23" />
@@ -186,7 +213,7 @@ function IconSvg({ name }) {
       </svg>
     ),
     moon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
       </svg>
     ),
@@ -696,6 +723,16 @@ function OverviewPage({
   );
 }
 
+function StubPage({ icon, title, description }) {
+  return (
+    <div className="stub-page">
+      <div className="stub-page-icon"><IconSvg name={icon} size={24} /></div>
+      <h2>{title}</h2>
+      <p>{description}</p>
+    </div>
+  );
+}
+
 function Sidebar({ sidebarOpen, onToggleSidebar, theme, onToggleTheme }) {
   return (
     <aside className={`sidebar ${sidebarOpen ? "open" : "collapsed"}`}>
@@ -708,20 +745,38 @@ function Sidebar({ sidebarOpen, onToggleSidebar, theme, onToggleTheme }) {
           </div>
         )}
         <button className="sidebar-toggle" onClick={onToggleSidebar} aria-label="Toggle sidebar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             {sidebarOpen ? <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></> : <><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></>}
           </svg>
         </button>
       </div>
 
       <nav className="sidebar-nav" aria-label="Main navigation">
-        <p className="sidebar-section-label">{sidebarOpen ? "MAIN MENU" : ""}</p>
+        <p className="sidebar-section-label">{sidebarOpen ? "ANALYTICS" : ""}</p>
         <NavLink to="/overview" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="overview" />
           {sidebarOpen && <span>Overview</span>}
         </NavLink>
+        <NavLink to="/resources" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+          <IconSvg name="resources" />
+          {sidebarOpen && <span>Resources</span>}
+        </NavLink>
+        <NavLink to="/cost-analytics" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+          <IconSvg name="analytics" />
+          {sidebarOpen && <span>Cost Analytics</span>}
+        </NavLink>
 
-        <p className="sidebar-section-label">{sidebarOpen ? "USE CASES" : ""}</p>
+        <p className="sidebar-section-label">{sidebarOpen ? "OPERATIONS" : ""}</p>
+        <NavLink to="/waste" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+          <IconSvg name="waste" />
+          {sidebarOpen && <span>Waste Detector</span>}
+        </NavLink>
+        <NavLink to="/actions" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
+          <IconSvg name="actioncenter" />
+          {sidebarOpen && <span>Action Center</span>}
+        </NavLink>
+
+        <p className="sidebar-section-label">{sidebarOpen ? "SCENARIOS" : ""}</p>
         <NavLink to="/use-cases/cleanup" className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}>
           <IconSvg name="cleanup" />
           {sidebarOpen && <span>Cleanup</span>}
@@ -912,6 +967,18 @@ function AppShell() {
                 StatCard={StatCard} ProfileCard={ProfileCard}
               />
             </Suspense>
+          } />
+          <Route path="/resources" element={
+            <StubPage icon="resources" title="Resource Inventory" description="Full table of all cloud resources with type, cost, status, waste signals, and SLA badges. Coming in the next update." />
+          } />
+          <Route path="/waste" element={
+            <StubPage icon="waste" title="Waste Detector" description="Prioritized waste signal detection with severity rankings and estimated savings per resource. Coming in the next update." />
+          } />
+          <Route path="/actions" element={
+            <StubPage icon="actioncenter" title="Action Center" description="Agent-recommended optimization actions with risk assessment, apply/dismiss controls, and action history. Coming in the next update." />
+          } />
+          <Route path="/cost-analytics" element={
+            <StubPage icon="analytics" title="Cost Analytics" description="Cost breakdown by resource type, savings timeline, and scenario comparisons across optimization tasks. Coming in the next update." />
           } />
           <Route path="/rl-status" element={
             <Suspense fallback={<p className="chart-empty">Loading RL status...</p>}>
