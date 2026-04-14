@@ -1406,17 +1406,23 @@ function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, 
 }
 
 function CostAnalyticsPage({ task, seed, previewProfile, liveDashboard }) {
-  const [activeTab, setActiveTab] = useState("breakdown");
+  const location = useLocation();
+  const queryTab = new URLSearchParams(location.search).get("tab");
+  const [activeTab, setActiveTab] = useState(queryTab || "breakdown");
+
+  useEffect(() => {
+    if (queryTab && queryTab !== activeTab) setActiveTab(queryTab);
+  }, [queryTab]);
   const [scenarios, setScenarios] = useState({});
   const [scenariosLoading, setScenariosLoading] = useState(false);
 
   const profile = previewProfile;
 
   useEffect(() => {
-    if (activeTab === "scenarios" && Object.keys(scenarios).length === 0) {
+    if (activeTab === "scenarios") {
       loadScenarios();
     }
-  }, [activeTab]);
+  }, [activeTab, seed]);
 
   async function loadScenarios() {
     setScenariosLoading(true);
@@ -1432,16 +1438,18 @@ function CostAnalyticsPage({ task, seed, previewProfile, liveDashboard }) {
 
   const resourceData = useMemo(() => {
     const r = profile?.resources || {};
-    const costEstimates = { Compute: 350, Volumes: 40, Databases: 250, "Load Balancers": 80, Snapshots: 5, "Elastic IPs": 4 };
-    return [
-      { name: "Compute", count: r.compute || 0, cost: (r.compute || 0) * costEstimates.Compute },
-      { name: "Volumes", count: r.volumes || 0, cost: (r.volumes || 0) * costEstimates.Volumes },
-      { name: "Databases", count: r.databases || 0, cost: (r.databases || 0) * costEstimates.Databases },
-      { name: "Load Balancers", count: r.load_balancers || 0, cost: (r.load_balancers || 0) * costEstimates["Load Balancers"] },
-      { name: "Snapshots", count: r.snapshots || 0, cost: (r.snapshots || 0) * costEstimates.Snapshots },
-      { name: "Elastic IPs", count: r.elastic_ips || 0, cost: (r.elastic_ips || 0) * costEstimates["Elastic IPs"] },
-    ].filter((d) => d.count > 0);
+    const costPer = { Compute: 350, Volumes: 40, Databases: 250, "Load Balancers": 80, Snapshots: 5, "Elastic IPs": 4 };
+    return [{
+      name: "Cost Breakdown",
+      Compute: (r.compute || 0) * costPer.Compute,
+      Volumes: (r.volumes || 0) * costPer.Volumes,
+      Databases: (r.databases || 0) * costPer.Databases,
+      "Load Balancers": (r.load_balancers || 0) * costPer["Load Balancers"],
+      Snapshots: (r.snapshots || 0) * costPer.Snapshots,
+      "Elastic IPs": (r.elastic_ips || 0) * costPer["Elastic IPs"],
+    }];
   }, [profile]);
+  const resourceTypes = ["Compute", "Volumes", "Databases", "Load Balancers", "Snapshots", "Elastic IPs"];
 
   const wasteData = useMemo(() => {
     const w = profile?.waste_signals || {};
@@ -1505,18 +1513,17 @@ function CostAnalyticsPage({ task, seed, previewProfile, liveDashboard }) {
         <div className="ca-content">
           <div className="ca-chart-grid">
             <SectionCard title="Estimated Cost by Resource Type">
-              {resourceData.length > 0 ? (
+              {profile?.resources ? (
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={resourceData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="name" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
                     <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
                     <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.8rem" }} formatter={(v) => fmtMoney(v)} />
-                    <Bar dataKey="cost" name="Est. Cost" radius={[4, 4, 0, 0]}>
-                      {resourceData.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                      ))}
-                    </Bar>
+                    <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                    {resourceTypes.map((type, i) => (
+                      <Bar key={type} dataKey={type} stackId="cost" fill={CHART_COLORS[i % CHART_COLORS.length]} radius={i === resourceTypes.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+                    ))}
                   </BarChart>
                 </ResponsiveContainer>
               ) : <p className="ca-empty">No resource data available. Load a profile first.</p>}

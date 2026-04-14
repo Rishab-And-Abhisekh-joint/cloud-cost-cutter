@@ -77,7 +77,7 @@ function UseCasePage({
       </Suspense>
 
       <div style={{ margin: "16px 0", textAlign: "center" }}>
-        <Link to="/cost-analytics" className="btn-outline" style={{ display: "inline-block", padding: "8px 16px", textDecoration: "none", fontSize: "0.8rem", fontWeight: 600 }}>
+        <Link to={`/cost-analytics?tab=scenarios&scenario=${taskName}`} className="btn-outline" style={{ display: "inline-block", padding: "8px 16px", textDecoration: "none", fontSize: "0.8rem", fontWeight: 600 }}>
           View Full Cost Analytics →
         </Link>
       </div>
