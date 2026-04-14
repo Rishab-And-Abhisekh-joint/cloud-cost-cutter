@@ -1,0 +1,53 @@
+Now I have everything. Let me give you a curated, structured list with real product references and matching Figma templates.
+
+Rishab, here's your curated UI reference kit for Cloud Cost Cutter. I've organized this into two layers: real FinOps products to study for UX patterns (how the best in the industry solve this) and Figma templates to fork and customize (so you're not designing from scratch).
+
+Tier 1: Study These Real Products (screenshot their UIs for your Figma board)
+These are the products judges from Meta/HF will mentally compare your UI against. Your goal isn't to copy them — it's to match their information density and surpass their visual polish.
+Vantage (https://www.vantage.sh) — The gold standard for clean FinOps UI. Their cost report view has a perfect balance of summary KPI cards at the top, a cost-over-time area chart in the middle, and a drilldown table at the bottom. Study how they handle the "resource list → detail panel" pattern. Their free tier screenshots are all over their docs.
+CloudZero (https://www.cloudzero.com/dashboards/) — Focus on their "cost per customer" and "anomaly detection" views. They do the best job of connecting cost data to business context (which is exactly what your agent does — connecting waste to actions). Their dashboard gallery page shows multiple layout patterns.
+Kubecost (https://www.kubecost.com) — Study their allocation view. It's the densest of the three — lots of bar charts breaking down cost by namespace/label/team. Good reference for how to show "cost breakdown by resource type" which your app needs. Now owned by IBM, so the design system is more enterprise-grade.
+Infracost (https://www.infracost.io) — Interesting because they show cost before it's incurred (in PRs). Their UI for "here's what this change will cost" maps nicely to your "here's what this action will save" pattern.
+Holori (https://holori.com/finops-dashboard/) — Good drag-and-drop dashboard builder reference. Study how they let users compose their own views from widgets.
+
+Tier 2: Figma Templates to Fork (free, high quality)
+These are ranked by relevance to a cloud cost / analytics B2B dashboard:
+Must-Use (fork one of these as your base)
+
+B2B Design System - UI Kit — https://www.figma.com/community/file/1182217805168805676
+The most complete free B2B component library. Has tables, charts, KPI cards, sidebars, filters — everything you need for a FinOps dashboard. Use this as your component foundation.
+Raple - Analytics Admin Dashboard — https://www.figma.com/community/file/1272418797925063963
+Beautiful analytics-focused template with charts, data tables, and metric cards. The layout pattern (sidebar + top KPIs + chart + table) is exactly what a cloud cost dashboard needs.
+600+ Components Dashboard Templates — https://www.figma.com/community/file/1268538729958421359
+Massive component library. Use this to grab individual widgets — donut charts for cost breakdown, bar charts for resource utilization, status badges for SLA health.
+Monitoring Dashboard Design — https://www.figma.com/community/file/1202152467176179574
+Server/infrastructure monitoring layout. Closest to the "cloud infrastructure" visual language you need. Has uptime indicators, resource health panels, and alert lists.
+Server Dashboard — https://www.figma.com/community/file/1214827446802829114
+Specifically designed for server monitoring. Good for the "resource inventory" view where you show all compute instances, volumes, etc.
+
+Good for Specific Screens
+
+SaaS B2B Dashboard Design — https://www.figma.com/community/file/1060234258667171110
+Soft colors, clean layout. Good for the "overview/home" screen that shows total spend, savings achieved, and waste remaining.
+Sleek Dashboard Designs for Data Visualization — https://www.figma.com/community/file/1293672969334455314
+Multiple chart styles. Use for the "cost trend" and "savings over time" charts.
+Free Dark Admin Dashboards (DashDark) — https://www.figma.com/community/file/1325597018063319916
+If you want a dark theme option. Material-UI based, responsive components.
+Finance Dashboard UI Kit — https://www.figma.com/community/file/1463963596840499912
+Pie charts, bar charts, activity lists for financial data. Map these to cost-by-service breakdowns.
+B2B SaaS Dashboard Prototype Flow — https://www.figma.com/community/file/1172212255337829742
+Has 5 connected screens with navigation flow. Good reference for how screens connect (dashboard → resource detail → action confirmation → results).
+
+
+Tier 3: Screens You Need to Design
+Based on what Cloud Cost Cutter does, here are the 7 screens you should build in Figma, mapped to which templates to pull from:
+ScreenWhat It ShowsPull FromOverview DashboardTotal spend, waste %, savings achieved, FinOps score, cost trend chartRaple + SaaS B2BResource InventoryTable of all resources with type, cost, CPU%, status, waste signal, SLA badgeServer Dashboard + B2B Design SystemWaste DetectorPrioritized list of wasteful resources with estimated savings per actionMonitoring DashboardAction CenterAgent recommendations with "Apply" / "Dismiss" buttons, risk assessmentB2B Design SystemCost BreakdownDonut chart by service type, bar chart by team/env, treemap by project600+ Components + Finance DashboardSLA MonitorHealth status of production services, dependency graph, alert historyMonitoring Dashboard + Server DashboardSavings ReportBefore/after comparison, cumulative savings timeline, ROI calculationSleek Dashboard + Finance UI Kit
+
+Design Principles for Industrial B2B
+A few things that separate "hackathon project" from "enterprise-ready" in the eyes of judges:
+Information density over whitespace. B2B dashboards aren't marketing sites. Users want to see 15 metrics without scrolling. Study how Datadog and Grafana pack data into every pixel.
+Neutral color palette with semantic accents. Gray/slate base. Green only for savings/success. Red only for waste/violations/alerts. Blue for informational. Never use color decoratively.
+Data tables are first-class citizens. Your resource inventory table needs sorting, filtering, column resizing, row selection, and inline status badges. This is where B2B users live.
+Progressive disclosure. Overview → click a wasteful resource → see detailed metrics → click "Apply recommendation" → confirmation modal. Never dump everything on one screen.
+Dark mode is expected. Every FinOps tool ships with dark mode. It signals "this is a professional tool for engineers who stare at screens all day."
+The Figma templates above give you 90% of the components. Your job is to fill them with cloud cost data patterns and nail the information hierarchy.Opus 4.6ExtendedClaude is AI a
