@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState, useCallback } from "react";
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate, useLocation } from "react-router-dom";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { MetricCard, SectionCard, RiskBadge, DataTable, FilterBar, StatusBadge, CountBadge } from "./components/shared";
+import { MetricCard, SectionCard, RiskBadge, DataTable, FilterBar, StatusBadge, CountBadge, ConfirmModal } from "./components/shared";
 
 const TASKS = ["cleanup", "rightsize", "full_optimization"];
 const DEFAULT_PROD_API_BASE_URL = "https://cloud-cost-env-api-production.up.railway.app";
@@ -1197,6 +1197,214 @@ function ResourceInventoryPage({ task, seed }) {
   );
 }
 
+function severityFromSavings(savings) {
+  if (savings >= 100) return "critical";
+  if (savings >= 50) return "high";
+  if (savings >= 20) return "medium";
+  return "low";
+}
+
+function severityLevel(sev) {
+  if (sev === "critical") return "critical";
+  if (sev === "high") return "high";
+  if (sev === "medium") return "warning";
+  return "success";
+}
+
+function actionTypeIcon(type) {
+  const map = {
+    stop_instance: "⏹",
+    terminate_instance: "🗑",
+    release_eip: "🔓",
+    delete_snapshot: "📸",
+    delete_volume: "💾",
+    delete_load_balancer: "⚖️",
+    rightsize_instance: "📐",
+  };
+  return map[type] || "⚡";
+}
+
+function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, liveBusyKey, onRefreshLive, onRunLiveAction }) {
+  const [dismissed, setDismissed] = useState(new Set());
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const recommendations = liveDashboard?.recommendations || [];
+  const actionHistory = liveDashboard?.action_history || [];
+  const canApply = liveDashboard?.can_apply_actions !== false;
+
+  const wasteSignals = useMemo(() => {
+    return [...recommendations]
+      .sort((a, b) => b.estimated_monthly_savings_usd - a.estimated_monthly_savings_usd)
+      .map((r) => ({
+        ...r,
+        severity: severityFromSavings(r.estimated_monthly_savings_usd),
+      }));
+  }, [recommendations]);
+
+  const activeRecs = useMemo(() => {
+    return recommendations.filter((r) => !dismissed.has(`${r.action_type}:${r.resource_id}`));
+  }, [recommendations, dismissed]);
+
+  const totalWaste = wasteSignals.reduce((s, w) => s + w.estimated_monthly_savings_usd, 0);
+  const totalPending = activeRecs.length;
+  const totalApplied = actionHistory.filter((a) => a.executed).length;
+  const totalSavingsApplied = actionHistory.filter((a) => a.executed).reduce((s, a) => s + a.estimated_monthly_savings_usd, 0);
+
+  function handleDismiss(rec) {
+    setDismissed((prev) => new Set(prev).add(`${rec.action_type}:${rec.resource_id}`));
+  }
+
+  function handleApplyClick(rec) {
+    setConfirmAction(rec);
+  }
+
+  function handleConfirmApply() {
+    if (confirmAction) {
+      onRunLiveAction(confirmAction.action_type, confirmAction.resource_id, true);
+      setConfirmAction(null);
+    }
+  }
+
+  return (
+    <>
+      <div className="page-header">
+        <div>
+          <h2 className="page-title">Waste Detector & Action Center</h2>
+          <p className="page-subtitle">Identify waste and apply agent-recommended optimizations</p>
+        </div>
+        <button className="btn-outline btn-sm" onClick={() => onRefreshLive()} disabled={liveLoading}>
+          {liveLoading ? "Refreshing..." : "Refresh"}
+        </button>
+      </div>
+
+      {liveError && <p className="error-text">{liveError}</p>}
+      {liveMessage && <p className="success-text">{liveMessage}</p>}
+
+      <div className="ac-summary-bar">
+        <MetricCard label="Total Waste Detected" value={fmtMoney(totalWaste)} sublabel="potential monthly savings" variant="warning" />
+        <MetricCard label="Actions Pending" value={totalPending} sublabel={`of ${recommendations.length} recommendations`} variant="info" />
+        <MetricCard label="Actions Applied" value={totalApplied} sublabel={fmtMoney(totalSavingsApplied) + " saved"} variant="success" />
+        <MetricCard label="Waste Signals" value={wasteSignals.length} sublabel="resources with savings" variant="neutral" />
+      </div>
+
+      <div className="ac-panels">
+        <SectionCard title="Waste Detector" className="ac-waste-panel">
+          {liveLoading && wasteSignals.length === 0 ? (
+            <div className="ri-loading"><p>Loading waste signals...</p></div>
+          ) : wasteSignals.length === 0 ? (
+            <div className="ac-empty">
+              <p>No waste signals detected. Your resources look well-optimized.</p>
+            </div>
+          ) : (
+            <div className="ac-waste-list">
+              {wasteSignals.map((w, idx) => (
+                <div key={`${w.action_type}-${w.resource_id}-${idx}`} className="ac-waste-item">
+                  <div className="ac-waste-icon">{actionTypeIcon(w.action_type)}</div>
+                  <div className="ac-waste-info">
+                    <div className="ac-waste-resource">{w.resource_name || w.resource_id}</div>
+                    <div className="ac-waste-reason">{w.reason}</div>
+                  </div>
+                  <StatusBadge level={severityLevel(w.severity)} label={toTitleCase(w.severity)} />
+                  <div className="ac-waste-savings">{fmtMoney(w.estimated_monthly_savings_usd)}<span>/mo</span></div>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Action Queue" className="ac-action-panel">
+          {activeRecs.length === 0 ? (
+            <div className="ac-empty">
+              <p>{recommendations.length > 0 ? "All recommendations dismissed." : "No recommendations available."}</p>
+            </div>
+          ) : (
+            <div className="ac-action-list">
+              {activeRecs.map((rec, idx) => {
+                const busyDry = liveBusyKey === `${rec.action_type}:${rec.resource_id}:dry`;
+                const busyApply = liveBusyKey === `${rec.action_type}:${rec.resource_id}:apply`;
+                return (
+                  <div key={`${rec.action_type}-${rec.resource_id}-${idx}`} className="ac-action-card">
+                    <div className="ac-action-header">
+                      <span className="ac-action-type">{actionTypeIcon(rec.action_type)} {toTitleCase(rec.action_type)}</span>
+                      <RiskBadge risk={rec.risk} />
+                    </div>
+                    <div className="ac-action-target">
+                      <span className="ac-action-resource">{rec.resource_name || rec.resource_id}</span>
+                      <span className="ac-action-id">{rec.resource_id}</span>
+                    </div>
+                    <div className="ac-action-reason">{rec.reason}</div>
+                    <div className="ac-action-footer">
+                      <span className="ac-action-savings">{fmtMoney(rec.estimated_monthly_savings_usd)}/mo savings</span>
+                      <div className="ac-action-buttons">
+                        <button className="btn-ghost btn-sm" onClick={() => handleDismiss(rec)} disabled={busyDry || busyApply}>Dismiss</button>
+                        <button className="btn-outline btn-sm" onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, false)} disabled={busyDry || busyApply}>
+                          {busyDry ? "Running..." : "Dry Run"}
+                        </button>
+                        {canApply && (
+                          <button className="btn-solid btn-sm" onClick={() => handleApplyClick(rec)} disabled={busyDry || busyApply}>
+                            {busyApply ? "Applying..." : "Apply"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </SectionCard>
+      </div>
+
+      <SectionCard noPadding>
+        <button className="ac-history-toggle" onClick={() => setHistoryOpen(!historyOpen)}>
+          <span>Action History ({actionHistory.length})</span>
+          <span className="ac-chevron">{historyOpen ? "▲" : "▼"}</span>
+        </button>
+        {historyOpen && (
+          actionHistory.length === 0 ? (
+            <div className="ac-empty" style={{ padding: "16px" }}>
+              <p>No actions have been performed yet.</p>
+            </div>
+          ) : (
+            <div className="ac-history-list">
+              {[...actionHistory].reverse().map((a, idx) => (
+                <div key={idx} className={`ac-history-item ${a.ok ? (a.executed ? "ac-h-applied" : "ac-h-dry") : "ac-h-failed"}`}>
+                  <div className="ac-h-status">
+                    <StatusBadge
+                      level={a.ok ? (a.executed ? "success" : "info") : "critical"}
+                      label={a.ok ? (a.executed ? "Applied" : "Dry Run") : "Failed"}
+                    />
+                  </div>
+                  <div className="ac-h-info">
+                    <span className="ac-h-action">{toTitleCase(a.action_type)}</span>
+                    <span className="ac-h-resource">{a.resource_id}</span>
+                  </div>
+                  <div className="ac-h-message">{a.message}</div>
+                  <div className="ac-h-meta">
+                    <span>{fmtMoney(a.estimated_monthly_savings_usd)}/mo</span>
+                    <span className="ac-h-time">{new Date(a.timestamp).toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+      </SectionCard>
+
+      <ConfirmModal
+        open={!!confirmAction}
+        title={`Apply: ${confirmAction ? toTitleCase(confirmAction.action_type) : ""}`}
+        message={confirmAction ? `This will ${toTitleCase(confirmAction.action_type).toLowerCase()} resource "${confirmAction.resource_name || confirmAction.resource_id}". Estimated savings: ${fmtMoney(confirmAction.estimated_monthly_savings_usd)}/mo.` : ""}
+        confirmLabel="Apply Action"
+        risk={confirmAction?.risk}
+        onConfirm={handleConfirmApply}
+        onCancel={() => setConfirmAction(null)}
+      />
+    </>
+  );
+}
+
 function StubPage({ icon, title, description }) {
   return (
     <div className="stub-page">
@@ -1445,11 +1653,13 @@ function AppShell() {
           <Route path="/resources" element={
             <ResourceInventoryPage task={task} seed={seed} />
           } />
-          <Route path="/waste" element={
-            <StubPage icon="waste" title="Waste Detector" description="Prioritized waste signal detection with severity rankings and estimated savings per resource. Coming in the next update." />
-          } />
+          <Route path="/waste" element={<Navigate to="/actions" replace />} />
           <Route path="/actions" element={
-            <StubPage icon="actioncenter" title="Action Center" description="Agent-recommended optimization actions with risk assessment, apply/dismiss controls, and action history. Coming in the next update." />
+            <ActionCenterPage
+              liveDashboard={liveDashboard} liveLoading={liveLoading} liveError={liveError}
+              liveMessage={liveMessage} liveBusyKey={liveBusyKey}
+              onRefreshLive={refreshLiveDashboard} onRunLiveAction={runLiveAction}
+            />
           } />
           <Route path="/cost-analytics" element={
             <StubPage icon="analytics" title="Cost Analytics" description="Cost breakdown by resource type, savings timeline, and scenario comparisons across optimization tasks. Coming in the next update." />
