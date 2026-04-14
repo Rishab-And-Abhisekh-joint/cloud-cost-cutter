@@ -9,15 +9,39 @@ function toTitleCase(value) {
 
 function RelativeTime({ iso }) {
   if (!iso) return <span className="rl-meta-na">—</span>;
-  const d = new Date(iso);
-  const now = Date.now();
-  const diff = Math.max(0, Math.floor((now - d.getTime()) / 1000));
-  let label;
-  if (diff < 60) label = `${diff}s ago`;
-  else if (diff < 3600) label = `${Math.floor(diff / 60)}m ago`;
-  else if (diff < 86400) label = `${Math.floor(diff / 3600)}h ago`;
-  else label = d.toLocaleDateString();
-  return <span title={d.toISOString()}>{label}</span>;
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return <span className="rl-meta-na">—</span>;
+    const now = Date.now();
+    const diff = Math.max(0, Math.floor((now - d.getTime()) / 1000));
+    let label;
+    if (diff < 60) label = `${diff}s ago`;
+    else if (diff < 3600) label = `${Math.floor(diff / 60)}m ago`;
+    else if (diff < 86400) label = `${Math.floor(diff / 3600)}h ago`;
+    else label = d.toLocaleDateString();
+    return <span title={d.toISOString()}>{label}</span>;
+  } catch {
+    return <span className="rl-meta-na">—</span>;
+  }
+}
+
+function UptimeIndicator({ validatedAt }) {
+  const isRecent = (() => {
+    if (!validatedAt) return false;
+    try {
+      const d = new Date(validatedAt);
+      if (isNaN(d.getTime())) return false;
+      return (Date.now() - d.getTime()) < 300000;
+    } catch { return false; }
+  })();
+  return (
+    <div className="rl-uptime">
+      <div className={`rl-uptime-dot ${isRecent ? "rl-uptime-ok" : "rl-uptime-stale"}`} />
+      <span className="rl-uptime-label">
+        {validatedAt ? <><RelativeTime iso={validatedAt} /> — {isRecent ? "Healthy" : "Stale"}</> : "Not checked"}
+      </span>
+    </div>
+  );
 }
 
 export default function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }) {
@@ -31,6 +55,16 @@ export default function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }
   const metrics = rlStatus?.metrics || {};
   const hasTraining = Object.keys(training).length > 0;
   const hasMetrics = Object.keys(metrics).length > 0;
+  const lastChecked = rlStatus?.rl_last_validated_at || null;
+  const noteIcons = ["⚙", "🔒", "📡", "⚠"];
+  const checkedLabel = (() => {
+    if (!lastChecked) return "—";
+    try {
+      const d = new Date(lastChecked);
+      if (isNaN(d.getTime())) return "—";
+      return d.toLocaleTimeString();
+    } catch { return "—"; }
+  })();
 
   return (
     <>
@@ -60,6 +94,7 @@ export default function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }
               ? "A trained reinforcement learning policy is loaded and making optimization decisions."
               : "No RL policy is active. The system uses heuristic ranking to select optimization actions."}
           </p>
+          <UptimeIndicator validatedAt={rlStatus?.rl_last_validated_at} />
         </div>
         <div className="rl-hero-meta">
           <div className="rl-hero-meta-item">
@@ -154,7 +189,11 @@ export default function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }
                 <div className="rl-timeline-dot" />
                 <div className="rl-timeline-line" />
                 <div className="rl-timeline-content">
-                  <p className="rl-timeline-text">{note}</p>
+                  <span className="rl-timeline-icon">{noteIcons[i % noteIcons.length]}</span>
+                  <div>
+                    <p className="rl-timeline-text">{note}</p>
+                    <span className="rl-timeline-ts">{checkedLabel}</span>
+                  </div>
                 </div>
               </div>
             ))}
