@@ -257,6 +257,63 @@ What this script does:
 - Sets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_SECRET`, and `AZURE_SUBSCRIPTION_ID` on Railway.
 - Calls `/azure/approval`, `/azure/connect`, and `/azure/dashboard` to verify live connectivity.
 
+Scheduled secret rotation runbook (recommended every 60-90 days):
+
+1. Prepare context and capture current app id from Railway:
+
+```powershell
+$sub = "72ccb77e-5f2f-4879-bafd-ef720cb1790a"
+$tenant = "f95e6f26-57a8-43b6-80cc-f425f998310b"
+$service = "cloud-cost-env-api"
+$environment = "production"
+
+az account set --subscription $sub
+$clientId = (railway variable list -s $service -e $environment --json | ConvertFrom-Json).AZURE_CLIENT_ID
+```
+
+2. Create a new app secret and keep overlap during cutover:
+
+```powershell
+$newSecret = az ad app credential reset --id $clientId --append --years 1 --query password -o tsv
+```
+
+3. Update Railway secret and trigger rollout:
+
+```powershell
+$newSecret | railway variable set AZURE_CLIENT_SECRET --stdin -s $service -e $environment
+railway redeploy -s $service -y
+```
+
+4. Verify backend and real Azure connectivity:
+
+```powershell
+$base = "https://cloud-cost-env-api-production.up.railway.app"
+Invoke-RestMethod -Method Get -Uri "$base/health"
+
+$approval = Invoke-RestMethod -Method Get -Uri "$base/azure/approval"
+$body = @{
+	approved = $true
+	approval_token = $approval.token
+	subscription_id = $sub
+	resource_group = "careorbit-rg"
+	tenant_id = $tenant
+	max_resources = 80
+} | ConvertTo-Json -Compress
+
+Invoke-RestMethod -Method Post -Uri "$base/azure/connect" -ContentType "application/json" -Body $body
+Invoke-RestMethod -Method Get -Uri "$base/azure/dashboard"
+```
+
+5. Optional cleanup after successful verification:
+
+- Remove older app credentials from the same app registration once the new secret is confirmed live.
+- Record rotation date, operator, and deployment id in your operations notes.
+
+Rollback guidance:
+
+- If `/azure/connect` fails after rotation, set the prior known-good `AZURE_CLIENT_SECRET` back in Railway and redeploy.
+- Keep at least one previous valid secret until post-rotation verification passes.
+
 ## Production Deployment (Railway + Vercel)
 
 Install CLIs if needed:
