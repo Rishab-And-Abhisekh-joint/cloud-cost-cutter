@@ -240,6 +240,23 @@ curl -X POST http://127.0.0.1:8000/azure/connect \
 curl http://127.0.0.1:8000/azure/dashboard
 ```
 
+Production Azure identity setup (Railway + real Azure resources):
+
+```powershell
+./scripts/setup_azure_identity_railway.ps1 \
+	-SubscriptionId "72ccb77e-5f2f-4879-bafd-ef720cb1790a" \
+	-TenantId "f95e6f26-57a8-43b6-80cc-f425f998310b" \
+	-ResourceGroup "careorbit-rg" \
+	-RailwayService "cloud-cost-env-api" \
+	-RailwayEnvironment "production"
+```
+
+What this script does:
+
+- Creates a Reader-scoped Azure service principal on the target resource group.
+- Sets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_SECRET`, and `AZURE_SUBSCRIPTION_ID` on Railway.
+- Calls `/azure/approval`, `/azure/connect`, and `/azure/dashboard` to verify live connectivity.
+
 ## Production Deployment (Railway + Vercel)
 
 Install CLIs if needed:
