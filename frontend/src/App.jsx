@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState, useCallback } from "react";
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate, useLocation } from "react-router-dom";
 
 const TASKS = ["cleanup", "rightsize", "full_optimization"];
@@ -12,30 +12,27 @@ const TASK_META = {
   cleanup: {
     title: "Cleanup Sweep",
     description: "Quick wins: remove unattached resources, stale snapshots, and idle artifacts.",
-    icon: "\u{1F9F9}",
   },
   rightsize: {
     title: "Rightsize Track",
     description: "Capacity tuning for compute and data tiers while preserving SLA safety.",
-    icon: "\u{2696}\u{FE0F}",
   },
   full_optimization: {
     title: "Full Optimization",
     description: "Max savings path combining cleanup, rightsizing, scheduling, and guarded apply actions.",
-    icon: "\u{1F680}",
   },
 };
+
+const CHART_COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
 
 function resolveApiBaseUrl() {
   const configured = String(import.meta.env.VITE_API_BASE_URL || "").trim();
   if (configured) {
     return configured.replace(/\/+$/, "");
   }
-
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
     return "http://127.0.0.1:8000";
   }
-
   return DEFAULT_PROD_API_BASE_URL;
 }
 
@@ -65,9 +62,7 @@ function fmtPercent(value) {
 }
 
 function sumValues(record) {
-  if (!record || typeof record !== "object") {
-    return 0;
-  }
+  if (!record || typeof record !== "object") return 0;
   return Object.values(record).reduce((acc, value) => acc + Number(value || 0), 0);
 }
 
@@ -79,57 +74,41 @@ async function request(path, options = {}) {
   for (let attempt = 0; attempt <= REQUEST_RETRIES; attempt += 1) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
     try {
       const response = await fetch(`${API_BASE_URL}${path}`, {
         headers: { "Content-Type": "application/json", ...(options.headers || {}) },
         ...options,
         signal: controller.signal,
       });
-
       const text = await response.text();
       let payload = null;
-
       if (text) {
-        try {
-          payload = JSON.parse(text);
-        } catch {
-          payload = text;
-        }
+        try { payload = JSON.parse(text); } catch { payload = text; }
       }
-
       if (!response.ok) {
-        const detail =
-          payload && typeof payload === "object"
-            ? payload.detail || JSON.stringify(payload)
-            : String(payload || `Request failed: ${response.status}`);
+        const detail = payload && typeof payload === "object"
+          ? payload.detail || JSON.stringify(payload)
+          : String(payload || `Request failed: ${response.status}`);
         const error = new Error(detail);
         error.status = response.status;
         throw error;
       }
-
       return payload ?? {};
     } catch (error) {
       lastError = error;
       const status = Number(error?.status || 0);
       const isAbort = error?.name === "AbortError";
       const retriable = canRetry && (isAbort || status === 429 || status >= 500 || status === 0);
-
       if (retriable && attempt < REQUEST_RETRIES) {
         await sleep((attempt + 1) * 350);
         continue;
       }
-
-      if (isAbort) {
-        throw new Error(`Request timed out after ${REQUEST_TIMEOUT_MS}ms`);
-      }
-
+      if (isAbort) throw new Error(`Request timed out after ${REQUEST_TIMEOUT_MS}ms`);
       throw error;
     } finally {
       clearTimeout(timer);
     }
   }
-
   throw lastError || new Error("Request failed");
 }
 
@@ -193,14 +172,32 @@ function IconSvg({ name }) {
         <polyline points="12 6 12 12 16 14" />
       </svg>
     ),
+    sun: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="5" />
+        <line x1="12" y1="1" x2="12" y2="3" />
+        <line x1="12" y1="21" x2="12" y2="23" />
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+        <line x1="1" y1="12" x2="3" y2="12" />
+        <line x1="21" y1="12" x2="23" y2="12" />
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+      </svg>
+    ),
+    moon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+    ),
   };
   return icons[name] || null;
 }
 
-function StatCard({ label, value, helper, icon }) {
+function StatCard({ label, value, helper, icon, iconColor }) {
   return (
     <article className="kpi-card">
-      {icon ? <span className="kpi-icon"><IconSvg name={icon} /></span> : null}
+      {icon ? <span className={`kpi-icon ${iconColor || ""}`}><IconSvg name={icon} /></span> : null}
       <div className="kpi-content">
         <p className="kpi-label">{label}</p>
         <p className="kpi-value">{value}</p>
@@ -238,6 +235,148 @@ function signalLabel(actionType) {
   return "Storage";
 }
 
+function MiniDonutChart({ data, label, sublabel }) {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  if (!data.length || total === 0) {
+    return (
+      <div className="mini-chart-card">
+        <p className="mini-chart-title">{label}</p>
+        <p className="mini-chart-subtitle">No data</p>
+      </div>
+    );
+  }
+
+  const r = 38;
+  const circ = 2 * Math.PI * r;
+  let offset = 0;
+
+  return (
+    <div className="mini-chart-card">
+      <p className="mini-chart-title">{label}</p>
+      <div className="mini-ring">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r={r} fill="none" stroke="var(--track-bg)" strokeWidth="8" />
+          {data.map((seg, i) => {
+            const pct = seg.value / total;
+            const dash = pct * circ;
+            const gap = circ - dash;
+            const rotate = (offset / total) * 360 - 90;
+            offset += seg.value;
+            return (
+              <circle
+                key={seg.name}
+                cx="50" cy="50" r={r}
+                fill="none"
+                stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                strokeWidth="8"
+                strokeDasharray={`${dash} ${gap}`}
+                strokeLinecap="round"
+                transform={`rotate(${rotate} 50 50)`}
+              />
+            );
+          })}
+        </svg>
+        <div className="mini-ring-label">
+          <strong>{total}</strong>
+          <span>{sublabel || "total"}</span>
+        </div>
+      </div>
+      <div className="mini-legend">
+        {data.map((seg, i) => (
+          <div className="mini-legend-item" key={seg.name}>
+            <span className="mini-legend-dot" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+            {seg.name}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WasteGauge({ wasteSignals }) {
+  const entries = [
+    { name: "Idle Compute", value: Number(wasteSignals?.idle_compute || 0), color: "#ef4444" },
+    { name: "Orphaned Vols", value: Number(wasteSignals?.orphaned_volumes || 0), color: "#f59e0b" },
+    { name: "Unattached IPs", value: Number(wasteSignals?.unattached_ips || 0), color: "#3b82f6" },
+    { name: "Empty LBs", value: Number(wasteSignals?.empty_load_balancers || 0), color: "#8b5cf6" },
+    { name: "Overprov. Compute", value: Number(wasteSignals?.overprovisioned_compute || 0), color: "#06b6d4" },
+    { name: "Overprov. DB", value: Number(wasteSignals?.overprovisioned_databases || 0), color: "#22c55e" },
+  ].filter((e) => e.value > 0);
+
+  const maxVal = Math.max(1, ...entries.map((e) => e.value));
+
+  if (!entries.length) {
+    return (
+      <div className="mini-chart-card">
+        <p className="mini-chart-title">Waste Signals</p>
+        <p className="mini-chart-subtitle">No waste detected</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mini-chart-card">
+      <p className="mini-chart-title">Waste Signals</p>
+      <div className="gauge-bar-wrap">
+        {entries.map((e) => (
+          <div className="gauge-row" key={e.name}>
+            <div className="gauge-label">
+              <span>{e.name}</span>
+              <strong>{e.value}</strong>
+            </div>
+            <div className="gauge-track">
+              <div className="gauge-fill" style={{ width: `${(e.value / maxVal) * 100}%`, background: e.color }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CostBreakdownChart({ cost }) {
+  const current = Number(cost?.current_monthly_spend || 0);
+  const target = Number(cost?.target_monthly_spend || 0);
+  const maxSavings = Number(cost?.max_possible_savings_8_steps || 0);
+  const gap = Math.max(0, current - target);
+  const maxVal = Math.max(1, current, target, maxSavings);
+
+  const bars = [
+    { name: "Current Spend", value: current, color: "#3b82f6" },
+    { name: "Target Spend", value: target, color: "#22c55e" },
+    { name: "Gap", value: gap, color: "#f59e0b" },
+    { name: "Max Savings", value: maxSavings, color: "#8b5cf6" },
+  ];
+
+  if (current === 0) {
+    return (
+      <div className="mini-chart-card">
+        <p className="mini-chart-title">Cost Breakdown</p>
+        <p className="mini-chart-subtitle">No cost data</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mini-chart-card">
+      <p className="mini-chart-title">Cost Breakdown</p>
+      <div className="cost-bar-chart">
+        {bars.map((b) => (
+          <div className="cost-bar-row" key={b.name}>
+            <div className="cost-bar-label">
+              <span>{b.name}</span>
+              <strong>{fmtMoney(b.value)}</strong>
+            </div>
+            <div className="cost-bar-track">
+              <div className="cost-bar-fill" style={{ width: `${(b.value / maxVal) * 100}%`, background: b.color }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ProfileCard({ title, profile }) {
   if (!profile) {
     return (
@@ -255,7 +394,6 @@ function ProfileCard({ title, profile }) {
   const wasteSignals = profile.waste_signals || {};
   const safety = profile.safety || {};
   const cost = profile.cost || {};
-
   const wasteTotal = sumValues(wasteSignals);
   const criticalDensity =
     Number(resources.compute || 0) > 0
@@ -271,47 +409,18 @@ function ProfileCard({ title, profile }) {
         </div>
         <span className={`profile-mode profile-mode-${profile.mode}`}>{profile.mode}</span>
       </header>
-
       <div className="profile-grid">
-        <div className="profile-metric">
-          <p>Monthly Spend</p>
-          <strong>{fmtMoney(cost.current_monthly_spend)}</strong>
-        </div>
-        <div className="profile-metric">
-          <p>Target Spend</p>
-          <strong>{fmtMoney(cost.target_monthly_spend)}</strong>
-        </div>
-        <div className="profile-metric">
-          <p>Savings Gap</p>
-          <strong>{fmtMoney(Math.max(0, Number(cost.current_monthly_spend || 0) - Number(cost.target_monthly_spend || 0)))}</strong>
-        </div>
-        <div className="profile-metric">
-          <p>Max Savings (8 steps)</p>
-          <strong>{fmtMoney(cost.max_possible_savings_8_steps)}</strong>
-        </div>
-        <div className="profile-metric">
-          <p>Core Resources</p>
-          <strong>{Number(resources.core_total || 0)}</strong>
-        </div>
-        <div className="profile-metric">
-          <p>Waste Signals</p>
-          <strong>{wasteTotal}</strong>
-        </div>
+        <div className="profile-metric"><p>Monthly Spend</p><strong>{fmtMoney(cost.current_monthly_spend)}</strong></div>
+        <div className="profile-metric"><p>Target Spend</p><strong>{fmtMoney(cost.target_monthly_spend)}</strong></div>
+        <div className="profile-metric"><p>Savings Gap</p><strong>{fmtMoney(Math.max(0, Number(cost.current_monthly_spend || 0) - Number(cost.target_monthly_spend || 0)))}</strong></div>
+        <div className="profile-metric"><p>Max Savings (8 steps)</p><strong>{fmtMoney(cost.max_possible_savings_8_steps)}</strong></div>
+        <div className="profile-metric"><p>Core Resources</p><strong>{Number(resources.core_total || 0)}</strong></div>
+        <div className="profile-metric"><p>Waste Signals</p><strong>{wasteTotal}</strong></div>
       </div>
-
       <div className="profile-rail">
-        <div>
-          <p>Critical Prod Density</p>
-          <strong>{fmtPercent(criticalDensity)}</strong>
-        </div>
-        <div>
-          <p>Dependency Edges</p>
-          <strong>{Number(safety.dependency_edges || 0)}</strong>
-        </div>
-        <div>
-          <p>Snapshots</p>
-          <strong>{Number(resources.snapshots || 0)}</strong>
-        </div>
+        <div><p>Critical Prod Density</p><strong>{fmtPercent(criticalDensity)}</strong></div>
+        <div><p>Dependency Edges</p><strong>{Number(safety.dependency_edges || 0)}</strong></div>
+        <div><p>Snapshots</p><strong>{Number(resources.snapshots || 0)}</strong></div>
       </div>
     </article>
   );
@@ -322,9 +431,7 @@ function ResourceMap({ counts }) {
   if (!entries.length) {
     return <p className="empty-text">Resource map is available once live dashboard data is loaded.</p>;
   }
-
   const maxValue = Number(entries[0][1] || 1);
-
   return (
     <div className="resource-map">
       {entries.map(([name, value]) => {
@@ -350,19 +457,14 @@ function SavingsTrend({ recommendations, actionHistory }) {
     .slice()
     .sort((a, b) => Number(b.estimated_monthly_savings_usd || 0) - Number(a.estimated_monthly_savings_usd || 0))
     .slice(0, 6);
-
   if (!ranked.length) {
     return <p className="empty-text">Savings spectrum appears once live recommendations are available.</p>;
   }
-
   const maxSavings = Math.max(1, Number(ranked[0]?.estimated_monthly_savings_usd || 1));
   const executedCount = (actionHistory || []).filter((item) => !item?.dry_run && item?.ok).length;
-
   return (
     <div className="savings-trend">
-      <p className="trend-note">
-        Showing top {ranked.length} opportunities · {executedCount} applied successfully
-      </p>
+      <p className="trend-note">Showing top {ranked.length} opportunities · {executedCount} applied successfully</p>
       <div className="trend-list" role="list" aria-label="Top savings opportunities">
         {ranked.map((entry, index) => {
           const savings = Number(entry.estimated_monthly_savings_usd || 0);
@@ -385,30 +487,23 @@ function SavingsTrend({ recommendations, actionHistory }) {
 }
 
 function OverviewPage({
-  task,
-  seed,
-  loading,
-  error,
-  liveLoading,
-  liveError,
-  liveMessage,
-  liveBusyKey,
-  activeProfile,
-  previewProfile,
-  liveDashboard,
-  optimizationPressure,
-  currentTaskName,
-  activeStep,
-  currentCost,
-  potentialSavings,
-  onSeedChange,
-  onTaskChange,
-  onRefreshPreview,
-  onStartEpisode,
-  onRefreshLive,
-  onRunLiveAction,
-  onOpenUseCase,
+  task, seed, loading, error, liveLoading, liveError, liveMessage, liveBusyKey,
+  activeProfile, previewProfile, liveDashboard, optimizationPressure,
+  currentTaskName, activeStep, currentCost, potentialSavings,
+  onSeedChange, onTaskChange, onRefreshPreview, onStartEpisode,
+  onRefreshLive, onRunLiveAction, onOpenUseCase,
 }) {
+  const chosenProfile = activeProfile || previewProfile;
+  const resources = chosenProfile?.resources || {};
+  const resourcePieData = [
+    { name: "Compute", value: Number(resources.compute || 0) },
+    { name: "Volumes", value: Number(resources.volumes || 0) },
+    { name: "Databases", value: Number(resources.databases || 0) },
+    { name: "Load Balancers", value: Number(resources.load_balancers || 0) },
+    { name: "Snapshots", value: Number(resources.snapshots || 0) },
+    { name: "Elastic IPs", value: Number(resources.elastic_ips || 0) },
+  ].filter((d) => d.value > 0);
+
   return (
     <>
       <div className="page-header">
@@ -424,42 +519,31 @@ function OverviewPage({
 
       <section className="kpi-grid">
         <StatCard icon="pressure" label="Optimization Pressure" value={fmtPercent(optimizationPressure)} helper={`step ${activeStep}`} />
-        <StatCard icon="spend" label="Monthly Spend" value={fmtMoney(currentCost)} helper={activeProfile?.seed ? `seed ${activeProfile.seed}` : "no active episode"} />
+        <StatCard icon="spend" iconColor="blue" label="Monthly Spend" value={fmtMoney(currentCost)} helper={activeProfile?.seed ? `seed ${activeProfile.seed}` : "no active episode"} />
         <StatCard icon="savings" label="Potential Savings" value={fmtMoney(potentialSavings)} helper="ranked action estimate" />
-        <StatCard
-          icon="actions"
-          label="Actions Logged"
-          value={String(liveDashboard?.action_history?.length || 0)}
-          helper={liveDashboard?.can_apply_actions ? "apply enabled" : "dry-run mode"}
-        />
+        <StatCard icon="actions" iconColor="amber" label="Actions Logged" value={String(liveDashboard?.action_history?.length || 0)} helper={liveDashboard?.can_apply_actions ? "apply enabled" : "dry-run mode"} />
+      </section>
+
+      <section className="visual-grid">
+        <MiniDonutChart data={resourcePieData} label="Resource Distribution" sublabel="resources" />
+        <WasteGauge wasteSignals={chosenProfile?.waste_signals} />
+        <CostBreakdownChart cost={chosenProfile?.cost} />
       </section>
 
       <div className="charts-row">
         <article className="card">
-          <div className="card-header">
-            <h3>Savings Opportunity Spectrum</h3>
-          </div>
+          <div className="card-header"><h3>Savings Opportunity Spectrum</h3></div>
           <div className="card-body">
             <SavingsTrend recommendations={liveDashboard?.recommendations} actionHistory={liveDashboard?.action_history} />
           </div>
         </article>
-
         <article className="card">
-          <div className="card-header">
-            <h3>Optimization Progress</h3>
-          </div>
+          <div className="card-header"><h3>Optimization Progress</h3></div>
           <div className="card-body progress-ring-wrap">
             <div className="progress-ring">
               <svg viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" strokeWidth="10" />
-                <circle
-                  cx="60" cy="60" r="52" fill="none"
-                  stroke="#22c55e" strokeWidth="10"
-                  strokeDasharray={`${optimizationPressure * 3.27} 327`}
-                  strokeLinecap="round"
-                  transform="rotate(-90 60 60)"
-                  className="progress-ring-circle"
-                />
+                <circle cx="60" cy="60" r="52" fill="none" stroke="var(--ring-track)" strokeWidth="10" />
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#22c55e" strokeWidth="10" strokeDasharray={`${optimizationPressure * 3.27} 327`} strokeLinecap="round" transform="rotate(-90 60 60)" className="progress-ring-circle" />
               </svg>
               <div className="progress-ring-label">
                 <strong>{fmtPercent(optimizationPressure)}</strong>
@@ -504,9 +588,7 @@ function OverviewPage({
       {error ? <p className="error-text">{error}</p> : null}
 
       <section className="tab-section">
-        <div className="tab-header">
-          <h3>Use Cases</h3>
-        </div>
+        <div className="tab-header"><h3>Use Cases</h3></div>
         <div className="usecase-table">
           <div className="table-header">
             <span>Use Case</span>
@@ -535,17 +617,14 @@ function OverviewPage({
             {liveLoading ? "Refreshing..." : "Refresh Live"}
           </button>
         </div>
-
         {liveError ? <p className="error-text">{liveError}</p> : null}
         {liveMessage ? <p className="live-message">{liveMessage}</p> : null}
-
         <div className="kpi-grid compact">
           <StatCard label="Live Connection" value={liveDashboard?.connected ? "Connected" : "Offline"} helper={liveDashboard?.region || "unknown region"} />
           <StatCard label="Potential Savings" value={fmtMoney(liveDashboard?.potential_monthly_savings_usd || 0)} helper="monthly estimate" />
           <StatCard label="Can Apply" value={liveDashboard?.can_apply_actions ? "Yes" : "No"} helper="toggle via env var" />
           <StatCard label="Action History" value={String(liveDashboard?.action_history?.length || 0)} helper="latest 20 events" />
         </div>
-
         <div className="ops-grid">
           <article className="card">
             <div className="card-header"><h3>Prioritized Recommendations</h3></div>
@@ -583,7 +662,6 @@ function OverviewPage({
               )}
             </div>
           </article>
-
           <article className="card">
             <div className="card-header"><h3>Recent Actions</h3></div>
             <div className="card-body">
@@ -606,7 +684,6 @@ function OverviewPage({
               )}
             </div>
           </article>
-
           <article className="card wide">
             <div className="card-header"><h3>Resource Footprint Map</h3></div>
             <div className="card-body">
@@ -619,9 +696,7 @@ function OverviewPage({
   );
 }
 
-function Sidebar({ sidebarOpen, onToggleSidebar }) {
-  const location = useLocation();
-
+function Sidebar({ sidebarOpen, onToggleSidebar, theme, onToggleTheme }) {
   return (
     <aside className={`sidebar ${sidebarOpen ? "open" : "collapsed"}`}>
       <div className="sidebar-brand">
@@ -666,6 +741,13 @@ function Sidebar({ sidebarOpen, onToggleSidebar }) {
           {sidebarOpen && <span>Agent + RL</span>}
         </NavLink>
       </nav>
+
+      <div className="sidebar-footer">
+        <button className="theme-toggle-btn" onClick={onToggleTheme} aria-label="Toggle theme">
+          <IconSvg name={theme === "dark" ? "sun" : "moon"} />
+          {sidebarOpen && <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>}
+        </button>
+      </div>
     </aside>
   );
 }
@@ -673,6 +755,12 @@ function Sidebar({ sidebarOpen, onToggleSidebar }) {
 function AppShell() {
   const navigate = useNavigate();
 
+  const [theme, setTheme] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cc-theme");
+      return stored === "dark" ? "dark" : "light";
+    } catch { return "light"; }
+  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [seed, setSeed] = useState("777");
   const [task, setTask] = useState("full_optimization");
@@ -690,6 +778,15 @@ function AppShell() {
   const [rlLoading, setRlLoading] = useState(false);
   const [rlError, setRlError] = useState("");
 
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("cc-theme", theme); } catch {}
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  }
+
   const currentCost = Number(activeProfile?.cost?.current_monthly_spend || previewProfile?.cost?.current_monthly_spend || 0);
   const potentialSavings = Number(
     liveDashboard?.potential_monthly_savings_usd || activeProfile?.cost?.max_possible_savings_8_steps || 0
@@ -700,18 +797,8 @@ function AppShell() {
 
   useEffect(() => {
     async function bootstrap() {
-      try {
-        await request("/health", { method: "GET" });
-        setHealth("online");
-      } catch {
-        setHealth("offline");
-      }
-      try {
-        const active = await request("/profile", { method: "GET" });
-        setActiveProfile(active);
-      } catch {
-        setActiveProfile(null);
-      }
+      try { await request("/health", { method: "GET" }); setHealth("online"); } catch { setHealth("offline"); }
+      try { const active = await request("/profile", { method: "GET" }); setActiveProfile(active); } catch { setActiveProfile(null); }
       await refreshPreview(false, task, seed);
       await refreshLiveDashboard(false, task, seed);
       await refreshAgentStatus(false);
@@ -722,36 +809,24 @@ function AppShell() {
   useEffect(() => {
     refreshPreview(false, task, seed);
     refreshLiveDashboard(false, task, seed);
-    const timer = setInterval(() => {
-      refreshLiveDashboard(false, task, seed);
-    }, 15000);
+    const timer = setInterval(() => { refreshLiveDashboard(false, task, seed); }, 15000);
     return () => clearInterval(timer);
   }, [task, seed]);
 
   async function refreshLiveDashboard(showSpinner = true, taskName = task, seedValue = seed) {
     if (showSpinner) setLiveLoading(true);
     setLiveError("");
-    try {
-      const data = await request(liveDashboardPath(taskName, seedValue), { method: "GET" });
-      setLiveDashboard(data);
-    } catch (err) {
-      setLiveError(`Live dashboard: ${err.message}`);
-    } finally {
-      if (showSpinner) setLiveLoading(false);
-    }
+    try { const data = await request(liveDashboardPath(taskName, seedValue), { method: "GET" }); setLiveDashboard(data); }
+    catch (err) { setLiveError(`Live dashboard: ${err.message}`); }
+    finally { if (showSpinner) setLiveLoading(false); }
   }
 
   async function refreshPreview(showSpinner = true, taskName = task, seedValue = seed) {
     if (showSpinner) setLoading(true);
     setError("");
-    try {
-      const preview = await request(`/profile?task_name=${taskName}&seed=${seedValue}`, { method: "GET" });
-      setPreviewProfile(preview);
-    } catch (err) {
-      setError(`Preview failed: ${err.message}`);
-    } finally {
-      if (showSpinner) setLoading(false);
-    }
+    try { const preview = await request(`/profile?task_name=${taskName}&seed=${seedValue}`, { method: "GET" }); setPreviewProfile(preview); }
+    catch (err) { setError(`Preview failed: ${err.message}`); }
+    finally { if (showSpinner) setLoading(false); }
   }
 
   async function startEpisode(taskName = task, seedValue = seed) {
@@ -763,11 +838,8 @@ function AppShell() {
       setActiveProfile(active);
       await refreshPreview(false, taskName, seedValue);
       await refreshLiveDashboard(false, taskName, seedValue);
-    } catch (err) {
-      setError(`Reset failed: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(`Reset failed: ${err.message}`); }
+    finally { setLoading(false); }
   }
 
   async function runLiveAction(actionType, resourceId, apply) {
@@ -783,30 +855,17 @@ function AppShell() {
       });
       setLiveMessage(result.message || "Action completed");
       await refreshLiveDashboard(false);
-      try {
-        const active = await request("/profile", { method: "GET" });
-        setActiveProfile(active);
-      } catch {
-        setActiveProfile(null);
-      }
-    } catch (err) {
-      setLiveError(`Live action failed: ${err.message}`);
-    } finally {
-      setLiveBusyKey("");
-    }
+      try { const active = await request("/profile", { method: "GET" }); setActiveProfile(active); } catch { setActiveProfile(null); }
+    } catch (err) { setLiveError(`Live action failed: ${err.message}`); }
+    finally { setLiveBusyKey(""); }
   }
 
   async function refreshAgentStatus(showSpinner = true) {
     if (showSpinner) setRlLoading(true);
     setRlError("");
-    try {
-      const status = await request("/agent/status", { method: "GET" });
-      setRlStatus(status);
-    } catch (err) {
-      setRlError(`Agent status failed: ${err.message}`);
-    } finally {
-      if (showSpinner) setRlLoading(false);
-    }
+    try { const status = await request("/agent/status", { method: "GET" }); setRlStatus(status); }
+    catch (err) { setRlError(`Agent status failed: ${err.message}`); }
+    finally { if (showSpinner) setRlLoading(false); }
   }
 
   function handleTaskChange(nextTask) {
@@ -821,72 +880,44 @@ function AppShell() {
 
   return (
     <div className="app-layout">
-      <Sidebar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} theme={theme} onToggleTheme={toggleTheme} />
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Navigate to="/overview" replace />} />
-          <Route
-            path="/overview"
-            element={
-              <OverviewPage
-                task={task}
-                seed={seed}
-                loading={loading}
-                error={error}
-                liveLoading={liveLoading}
-                liveError={liveError}
-                liveMessage={liveMessage}
-                liveBusyKey={liveBusyKey}
-                activeProfile={activeProfile}
-                previewProfile={previewProfile}
-                liveDashboard={liveDashboard}
-                optimizationPressure={optimizationPressure}
-                currentTaskName={currentTaskName}
-                activeStep={activeStep}
-                currentCost={currentCost}
-                potentialSavings={potentialSavings}
-                onSeedChange={setSeed}
-                onTaskChange={handleTaskChange}
+          <Route path="/overview" element={
+            <OverviewPage
+              task={task} seed={seed} loading={loading} error={error}
+              liveLoading={liveLoading} liveError={liveError} liveMessage={liveMessage}
+              liveBusyKey={liveBusyKey} activeProfile={activeProfile}
+              previewProfile={previewProfile} liveDashboard={liveDashboard}
+              optimizationPressure={optimizationPressure} currentTaskName={currentTaskName}
+              activeStep={activeStep} currentCost={currentCost} potentialSavings={potentialSavings}
+              onSeedChange={setSeed} onTaskChange={handleTaskChange}
+              onRefreshPreview={() => refreshPreview(true)}
+              onStartEpisode={() => startEpisode(task, seed)}
+              onRefreshLive={refreshLiveDashboard} onRunLiveAction={runLiveAction}
+              onOpenUseCase={openUseCase}
+            />
+          } />
+          <Route path="/use-cases/:taskName" element={
+            <Suspense fallback={<p className="chart-empty">Loading use-case route...</p>}>
+              <LazyUseCaseRoutePage
+                task={task} onTaskChange={handleTaskChange} tasks={TASKS}
+                taskMeta={TASK_META} seed={seed} loading={loading}
+                previewProfile={previewProfile} activeProfile={activeProfile}
+                liveDashboard={liveDashboard} onSeedChange={setSeed}
                 onRefreshPreview={() => refreshPreview(true)}
                 onStartEpisode={() => startEpisode(task, seed)}
                 onRefreshLive={refreshLiveDashboard}
-                onRunLiveAction={runLiveAction}
-                onOpenUseCase={openUseCase}
+                StatCard={StatCard} ProfileCard={ProfileCard}
               />
-            }
-          />
-          <Route
-            path="/use-cases/:taskName"
-            element={
-              <Suspense fallback={<p className="chart-empty">Loading use-case route...</p>}>
-                <LazyUseCaseRoutePage
-                  task={task}
-                  onTaskChange={handleTaskChange}
-                  tasks={TASKS}
-                  taskMeta={TASK_META}
-                  seed={seed}
-                  loading={loading}
-                  previewProfile={previewProfile}
-                  activeProfile={activeProfile}
-                  liveDashboard={liveDashboard}
-                  onSeedChange={setSeed}
-                  onRefreshPreview={() => refreshPreview(true)}
-                  onStartEpisode={() => startEpisode(task, seed)}
-                  onRefreshLive={refreshLiveDashboard}
-                  StatCard={StatCard}
-                  ProfileCard={ProfileCard}
-                />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/rl-status"
-            element={
-              <Suspense fallback={<p className="chart-empty">Loading RL status...</p>}>
-                <LazyRLStatusPage rlStatus={rlStatus} rlLoading={rlLoading} rlError={rlError} onRefresh={refreshAgentStatus} />
-              </Suspense>
-            }
-          />
+            </Suspense>
+          } />
+          <Route path="/rl-status" element={
+            <Suspense fallback={<p className="chart-empty">Loading RL status...</p>}>
+              <LazyRLStatusPage rlStatus={rlStatus} rlLoading={rlLoading} rlError={rlError} onRefresh={refreshAgentStatus} />
+            </Suspense>
+          } />
           <Route path="*" element={<Navigate to="/overview" replace />} />
         </Routes>
       </main>

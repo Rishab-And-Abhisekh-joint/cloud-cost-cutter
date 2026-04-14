@@ -19,13 +19,16 @@ A cloud cost optimization Reinforcement Learning environment built on the OpenEn
 - React SPA communicating with backend at `http://127.0.0.1:8000`
 - Uses Recharts for visualizations, React Router for navigation
 - `src/App.jsx` — Main app shell with live dashboard and scenario studio
-- **Design**: Clean SaaS light theme with sidebar navigation
+- **Design**: Dual-theme SaaS dashboard (light/dark) with sidebar navigation
   - Layout: Fixed left sidebar (240px, collapsible) + scrollable main content area
-  - Color palette: Light gray body (#f3f4f6), white cards, green (#22c55e) accent
+  - Theme toggle: Button in sidebar footer, persisted in localStorage (`cc-theme`)
+  - Light mode: #f3f4f6 body, #ffffff cards, #22c55e green accent
+  - Dark mode: #0f1117 body, #1a1d2e cards, same green accent, via `[data-theme="dark"]` CSS vars
   - Typography: Inter font family, clean hierarchy
   - Cards: 12px border-radius, subtle shadows, clean borders
-  - Charts: Green/blue/amber palette on light backgrounds
-  - KPI cards with SVG icons, progress ring visualization
+  - Enhanced graphics: Resource donut chart, waste signal gauges, cost breakdown bars, progress ring
+  - Charts: Green/blue/amber palette, theme-aware grid/axis/tooltip colors (via `useThemeColors()`)
+  - KPI cards with SVG icons, colored icon backgrounds
   - Table-style use case listing, tabbed sections
   - Accessibility: Focus-visible outlines, responsive down to mobile
   - Plain CSS (no Tailwind) — all styles in `src/styles.css`

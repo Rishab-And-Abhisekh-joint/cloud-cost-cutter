@@ -17,6 +17,17 @@ import {
 
 const PIE_COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
 
+function useThemeColors() {
+  const isDark = typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "dark";
+  return {
+    grid: isDark ? "#2a2d3e" : "#e5e7eb",
+    axis: isDark ? "#64748b" : "#9ca3af",
+    tooltipBg: isDark ? "#1a1d2e" : "#ffffff",
+    tooltipBorder: isDark ? "#2a2d3e" : "#e5e7eb",
+    text: isDark ? "#f1f5f9" : "#111827",
+  };
+}
+
 function toTitleCase(value) {
   return String(value || "")
     .split("_")
@@ -33,24 +44,12 @@ function fmtMoney(value) {
 }
 
 function signalLabel(actionType) {
-  if (actionType === "stop_instance") {
-    return "Compute";
-  }
-  if (actionType === "terminate_instance") {
-    return "Compute";
-  }
-  if (actionType === "release_eip") {
-    return "Network";
-  }
-  if (actionType === "delete_snapshot") {
-    return "Snapshot";
-  }
-  if (actionType === "delete_load_balancer") {
-    return "Network";
-  }
-  if (actionType === "rightsize_instance") {
-    return "Compute";
-  }
+  if (actionType === "stop_instance") return "Compute";
+  if (actionType === "terminate_instance") return "Compute";
+  if (actionType === "release_eip") return "Network";
+  if (actionType === "delete_snapshot") return "Snapshot";
+  if (actionType === "delete_load_balancer") return "Network";
+  if (actionType === "rightsize_instance") return "Compute";
   return "Storage";
 }
 
@@ -97,9 +96,7 @@ function buildHistoryTrend(actionHistory) {
   let cumulative = 0;
   return recent.map((entry, index) => {
     const saving = Number(entry?.estimated_monthly_savings_usd || 0);
-    if (entry?.ok) {
-      cumulative += saving;
-    }
+    if (entry?.ok) cumulative += saving;
     return {
       step: `#${index + 1}`,
       stepSavings: Number(entry?.ok ? saving : 0),
@@ -136,7 +133,22 @@ function NoChartData({ message }) {
   return <p className="chart-empty">{message}</p>;
 }
 
+function CustomTooltip({ active, payload, label, formatter }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: "var(--tooltip-bg)", border: "1px solid var(--tooltip-border)", borderRadius: 8, padding: "8px 12px", boxShadow: "var(--shadow-hover)" }}>
+      {label ? <p style={{ margin: "0 0 4px", fontSize: "0.75rem", color: "var(--text-muted)" }}>{label}</p> : null}
+      {payload.map((entry, i) => (
+        <p key={i} style={{ margin: 0, fontSize: "0.8rem", color: entry.color || "var(--text-primary)", fontWeight: 600 }}>
+          {entry.name}: {formatter ? formatter(entry.value) : entry.value}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export default function UseCaseCharts({ profile, liveDashboard }) {
+  const colors = useThemeColors();
   const resourcePie = useMemo(() => buildResourcePie(profile), [profile]);
   const wastePie = useMemo(() => buildWastePie(profile), [profile]);
   const costBars = useMemo(() => buildCostBars(profile), [profile]);
@@ -157,7 +169,7 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
                   <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
@@ -175,7 +187,7 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
                   <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
@@ -188,10 +200,10 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         {costBars.some((entry) => entry.value > 0) ? (
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={costBars}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="name" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
+              <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+              <XAxis dataKey="name" stroke={colors.axis} tick={{ fill: colors.axis }} />
+              <YAxis stroke={colors.axis} tick={{ fill: colors.axis }} />
+              <Tooltip content={<CustomTooltip formatter={(v) => fmtMoney(Number(v || 0))} />} />
               <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                 {costBars.map((entry, index) => (
                   <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
@@ -208,10 +220,10 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         {historyTrend.length ? (
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={historyTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="step" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
+              <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+              <XAxis dataKey="step" stroke={colors.axis} tick={{ fill: colors.axis }} />
+              <YAxis stroke={colors.axis} tick={{ fill: colors.axis }} />
+              <Tooltip content={<CustomTooltip formatter={(v) => fmtMoney(Number(v || 0))} />} />
               <Legend />
               <Line type="monotone" dataKey="stepSavings" stroke="#f59e0b" strokeWidth={2.4} dot={false} />
               <Line type="monotone" dataKey="cumulativeSavings" stroke="#22c55e" strokeWidth={2.4} dot={false} />
@@ -226,10 +238,10 @@ export default function UseCaseCharts({ profile, liveDashboard }) {
         {recommendationBars.length ? (
           <ResponsiveContainer width="100%" height={270}>
             <BarChart data={recommendationBars} layout="vertical" margin={{ left: 24 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis type="number" stroke="#9ca3af" />
-              <YAxis dataKey="resource" type="category" width={120} stroke="#9ca3af" />
-              <Tooltip formatter={(value) => fmtMoney(Number(value || 0))} />
+              <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+              <XAxis type="number" stroke={colors.axis} tick={{ fill: colors.axis }} />
+              <YAxis dataKey="resource" type="category" width={120} stroke={colors.axis} tick={{ fill: colors.axis }} />
+              <Tooltip content={<CustomTooltip formatter={(v) => fmtMoney(Number(v || 0))} />} />
               <Bar dataKey="savings" radius={[0, 8, 8, 0]} fill="#22c55e" />
             </BarChart>
           </ResponsiveContainer>
