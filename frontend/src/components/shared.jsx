@@ -51,44 +51,86 @@ export function MetricCard({ label, value, delta, deltaDirection, helper, icon, 
   );
 }
 
-export function FilterBar({ filters, values, onChange, searchPlaceholder, searchValue, onSearchChange }) {
+export function FilterBar({ filters, values, onChange, searchPlaceholder, searchValue, onSearchChange, onClearAll }) {
+  const activeChips = [];
+  if (filters) {
+    filters.forEach((f) => {
+      const val = values[f.key];
+      if (val) {
+        const opt = f.options.find((o) => o.value === val);
+        activeChips.push({ key: f.key, label: f.label, value: opt ? opt.label : val });
+      }
+    });
+  }
+  if (searchValue) {
+    activeChips.push({ key: "__search__", label: "Search", value: searchValue });
+  }
+
   return (
-    <div className="filter-bar">
-      {filters && filters.map((f) => (
-        <div className="filter-item" key={f.key}>
-          <label className="filter-label">{f.label}</label>
-          <select
-            className="filter-select"
-            value={values[f.key] || ""}
-            onChange={(e) => onChange(f.key, e.target.value)}
-          >
-            <option value="">{f.allLabel || "All"}</option>
-            {f.options.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-      ))}
-      {onSearchChange && (
-        <div className="filter-item filter-search">
-          <label className="filter-label">Search</label>
-          <input
-            className="filter-input"
-            type="text"
-            placeholder={searchPlaceholder || "Filter..."}
-            value={searchValue || ""}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
+    <div className="filter-bar-wrap">
+      <div className="filter-bar">
+        {filters && filters.map((f) => (
+          <div className="filter-item" key={f.key}>
+            <label className="filter-label">{f.label}</label>
+            <select
+              className="filter-select"
+              value={values[f.key] || ""}
+              onChange={(e) => onChange(f.key, e.target.value)}
+            >
+              <option value="">{f.allLabel || "All"}</option>
+              {f.options.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        ))}
+        {onSearchChange && (
+          <div className="filter-item filter-search">
+            <label className="filter-label">Search</label>
+            <input
+              className="filter-input"
+              type="text"
+              placeholder={searchPlaceholder || "Filter..."}
+              value={searchValue || ""}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </div>
+        )}
+      </div>
+      {activeChips.length > 0 && (
+        <div className="filter-chips">
+          {activeChips.map((chip) => (
+            <span className="filter-chip" key={chip.key}>
+              <span className="filter-chip-label">{chip.label}:</span> {chip.value}
+              <button
+                className="filter-chip-remove"
+                onClick={() => {
+                  if (chip.key === "__search__") {
+                    onSearchChange("");
+                  } else {
+                    onChange(chip.key, "");
+                  }
+                }}
+                aria-label={`Remove ${chip.label} filter`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {activeChips.length > 1 && onClearAll && (
+            <button className="filter-chip-clear" onClick={onClearAll}>Clear all</button>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-export function DataTable({ columns, data, onRowClick, emptyMessage, rowKeyField, expandedContent, stickyHeader }) {
+export function DataTable({ columns, data, onRowClick, emptyMessage, rowKeyField, expandedContent, stickyHeader, selectable, selectedKeys, onSelectionChange }) {
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState(SORT_ASC);
   const [expandedRow, setExpandedRow] = useState(null);
+  const sel = selectable ? (selectedKeys || []) : null;
 
   const handleSort = useCallback((colKey) => {
     if (sortCol === colKey) {
@@ -119,6 +161,19 @@ export function DataTable({ columns, data, onRowClick, emptyMessage, rowKeyField
     return rowKeyField ? row[rowKeyField] : idx;
   }, [rowKeyField]);
 
+  const toggleSelection = useCallback((key) => {
+    if (!onSelectionChange) return;
+    const next = sel.includes(key) ? sel.filter((k) => k !== key) : [...sel, key];
+    onSelectionChange(next);
+  }, [sel, onSelectionChange]);
+
+  const toggleSelectAll = useCallback(() => {
+    if (!onSelectionChange || !sortedData.length) return;
+    const allKeys = sortedData.map((row, idx) => getRowKey(row, idx));
+    const allSelected = allKeys.every((k) => sel.includes(k));
+    onSelectionChange(allSelected ? [] : allKeys);
+  }, [sel, onSelectionChange, sortedData, getRowKey]);
+
   const handleRowClick = useCallback((row, idx) => {
     if (expandedContent) {
       const key = getRowKey(row, idx);
@@ -136,6 +191,16 @@ export function DataTable({ columns, data, onRowClick, emptyMessage, rowKeyField
       <table className="dt-table">
         <thead>
           <tr className="dt-head-row">
+            {sel && (
+              <th className="dt-th dt-th-check" style={{ width: "36px", minWidth: "36px" }}>
+                <input
+                  type="checkbox"
+                  checked={sortedData.length > 0 && sortedData.every((r, i) => sel.includes(getRowKey(r, i)))}
+                  onChange={toggleSelectAll}
+                  aria-label="Select all rows"
+                />
+              </th>
+            )}
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -157,6 +222,7 @@ export function DataTable({ columns, data, onRowClick, emptyMessage, rowKeyField
           {sortedData.map((row, idx) => {
             const key = getRowKey(row, idx);
             const isExpanded = expandedContent && expandedRow === key;
+            const isSelected = sel ? sel.includes(key) : false;
             return (
               <DataTableRowGroup
                 key={key}
@@ -166,6 +232,9 @@ export function DataTable({ columns, data, onRowClick, emptyMessage, rowKeyField
                 expandedContent={expandedContent}
                 onClick={() => handleRowClick(row, idx)}
                 clickable={!!onRowClick || !!expandedContent}
+                selectable={!!sel}
+                isSelected={isSelected}
+                onToggleSelect={() => toggleSelection(key)}
               />
             );
           })}
@@ -175,10 +244,22 @@ export function DataTable({ columns, data, onRowClick, emptyMessage, rowKeyField
   );
 }
 
-function DataTableRowGroup({ row, columns, isExpanded, expandedContent, onClick, clickable }) {
+function DataTableRowGroup({ row, columns, isExpanded, expandedContent, onClick, clickable, selectable, isSelected, onToggleSelect }) {
+  const colCount = columns.length + (selectable ? 1 : 0);
   return (
     <>
-      <tr className={`dt-row ${clickable ? "dt-clickable" : ""} ${isExpanded ? "dt-expanded" : ""}`} onClick={onClick}>
+      <tr className={`dt-row ${clickable ? "dt-clickable" : ""} ${isExpanded ? "dt-expanded" : ""} ${isSelected ? "dt-selected" : ""}`} onClick={onClick}>
+        {selectable && (
+          <td className="dt-td dt-td-check">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => { e.stopPropagation(); onToggleSelect(); }}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Select row"
+            />
+          </td>
+        )}
         {columns.map((col) => (
           <td
             key={col.key}
@@ -190,7 +271,7 @@ function DataTableRowGroup({ row, columns, isExpanded, expandedContent, onClick,
       </tr>
       {isExpanded && expandedContent && (
         <tr className="dt-expand-row">
-          <td colSpan={columns.length} className="dt-expand-cell">
+          <td colSpan={colCount} className="dt-expand-cell">
             {expandedContent(row)}
           </td>
         </tr>

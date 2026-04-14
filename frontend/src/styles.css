@@ -793,6 +793,71 @@ body {
   box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
 }
 
+.filter-bar-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 16px 10px;
+  background: var(--bg-table-head);
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--accent-green-bg);
+  color: var(--accent-green);
+  border-radius: var(--radius-xs);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.filter-chip-label {
+  color: var(--text-light);
+}
+
+.filter-chip-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.7;
+}
+
+.filter-chip-remove:hover {
+  opacity: 1;
+}
+
+.filter-chip-clear {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  font-size: 0.7rem;
+  text-decoration: underline;
+  padding: 2px 4px;
+}
+
+.dt-th-check,
+.dt-td-check {
+  text-align: center;
+  padding: 0 4px !important;
+}
+
+.dt-selected {
+  background: var(--accent-green-bg) !important;
+}
+
 .dt-wrapper {
   overflow-x: auto;
 }
