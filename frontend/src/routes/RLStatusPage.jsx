@@ -141,7 +141,7 @@ export default function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }
         <div className="rl-policy-card">
           <span className="rl-policy-label">Validation</span>
           <span className="rl-policy-value">
-            <StatusBadge level={policyValidated ? "success" : validationError ? "critical" : "warning"} label={policyValidated ? "Passed" : "Failed"} />
+            <StatusBadge level={policyValidated ? "success" : validationError ? "critical" : "warning"} label={policyValidated ? "Passed" : validationError ? "Failed" : "Not Validated"} />
           </span>
         </div>
         <div className="rl-policy-card">
@@ -192,7 +192,7 @@ export default function RLStatusPage({ rlStatus, rlLoading, rlError, onRefresh }
                   <span className="rl-timeline-icon">{noteIcons[i % noteIcons.length]}</span>
                   <div>
                     <p className="rl-timeline-text">{note}</p>
-                    <span className="rl-timeline-ts">{checkedLabel}</span>
+                    <span className="rl-timeline-ts">last check: {checkedLabel}</span>
                   </div>
                 </div>
               </div>
