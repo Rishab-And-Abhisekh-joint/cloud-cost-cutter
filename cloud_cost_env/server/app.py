@@ -475,6 +475,15 @@ def create_fastapi_app() -> FastAPI:
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.get("/live/resources")
+    def live_resources(task_name: str = "full_optimization", seed: int | None = None):
+        try:
+            _ensure_live_env(task_name=task_name, seed=seed)
+            obs = env.get_observation_snapshot()
+            return [s.model_dump() for s in obs.resources_summary]
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.get("/live/dashboard", response_model=LiveAwsDashboard)
     def live_dashboard(task_name: str = "full_optimization", seed: int | None = None):
         try:

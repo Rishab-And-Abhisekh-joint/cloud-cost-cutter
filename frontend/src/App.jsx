@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState, useCallback } from "react";
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate, useLocation } from "react-router-dom";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { MetricCard, SectionCard, RiskBadge } from "./components/shared";
+import { MetricCard, SectionCard, RiskBadge, DataTable, FilterBar, StatusBadge, CountBadge } from "./components/shared";
 
 const TASKS = ["cleanup", "rightsize", "full_optimization"];
 const DEFAULT_PROD_API_BASE_URL = "https://cloud-cost-env-api-production.up.railway.app";
@@ -994,6 +994,202 @@ function OverviewPage({
   );
 }
 
+function deriveResourceStatus(r) {
+  const status = String(r.status || "").toLowerCase();
+  if (status === "stopped" || status === "idle") return "idle";
+  if (status === "orphaned" || status === "unattached") return "orphaned";
+  if (r.waste_signal >= 0.7) return "overprovisioned";
+  if (status.startsWith("age:")) return "active";
+  return "active";
+}
+
+function deriveStatusLevel(status) {
+  if (status === "idle") return "warning";
+  if (status === "orphaned") return "critical";
+  if (status === "overprovisioned") return "high";
+  return "success";
+}
+
+function resourceTypeLabel(type) {
+  const map = { compute: "Compute", volume: "Volume", database: "Database", load_balancer: "Load Balancer", snapshot: "Snapshot", elastic_ip: "Elastic IP" };
+  return map[type] || toTitleCase(type);
+}
+
+function deriveSLA(tags) {
+  return tags?.env === "prod" ? "Prod" : tags?.env === "staging" ? "Staging" : "Dev";
+}
+
+function ResourceInventoryPage({ task, seed }) {
+  const [resources, setResources] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [filters, setFilters] = useState({});
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await request(`/live/resources?task_name=${task}&seed=${seed}`);
+        if (!cancelled) setResources(data || []);
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [task, seed]);
+
+  const rows = useMemo(() => {
+    return resources.map((r) => {
+      const status = deriveResourceStatus(r);
+      return {
+        resource_id: r.resource_id,
+        name: r.resource_id,
+        type: r.resource_type,
+        typeLabel: resourceTypeLabel(r.resource_type),
+        monthly_cost: r.monthly_cost,
+        status,
+        statusLevel: deriveStatusLevel(status),
+        waste_signal: r.waste_signal,
+        wasteLevel: r.waste_signal >= 0.7 ? "high" : r.waste_signal >= 0.4 ? "medium" : "low",
+        sla: deriveSLA(r.tags),
+        risk: r.risk,
+        tags: r.tags || {},
+        rawStatus: r.status,
+      };
+    });
+  }, [resources]);
+
+  const filteredRows = useMemo(() => {
+    let result = rows;
+    if (filters.type) result = result.filter((r) => r.type === filters.type);
+    if (filters.status) result = result.filter((r) => r.status === filters.status);
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter((r) => r.resource_id.toLowerCase().includes(q) || r.typeLabel.toLowerCase().includes(q));
+    }
+    return result;
+  }, [rows, filters, search]);
+
+  const typeCounts = useMemo(() => {
+    const counts = {};
+    rows.forEach((r) => {
+      counts[r.type] = (counts[r.type] || 0) + 1;
+    });
+    return counts;
+  }, [rows]);
+
+  const typeOptions = useMemo(() => {
+    return Object.keys(typeCounts).map((t) => ({ value: t, label: `${resourceTypeLabel(t)} (${typeCounts[t]})` }));
+  }, [typeCounts]);
+
+  const statusOptions = [
+    { value: "active", label: "Active" },
+    { value: "idle", label: "Idle" },
+    { value: "orphaned", label: "Orphaned" },
+    { value: "overprovisioned", label: "Overprovisioned" },
+  ];
+
+  const filterDefs = [
+    { key: "type", label: "Type", options: typeOptions, allLabel: "All Types" },
+    { key: "status", label: "Status", options: statusOptions, allLabel: "All Statuses" },
+  ];
+
+  const columns = [
+    { key: "resource_id", header: "Resource ID", width: "180px", render: (v) => <span className="ri-id">{v}</span> },
+    { key: "typeLabel", header: "Type", width: "120px" },
+    { key: "monthly_cost", header: "Monthly Cost", align: "right", width: "110px", render: (v) => <span className="ri-cost">{fmtMoney(v)}</span>, sortValue: (row) => row.monthly_cost },
+    { key: "status", header: "Status", width: "120px", render: (_, row) => <StatusBadge level={row.statusLevel} label={toTitleCase(row.status)} /> },
+    { key: "waste_signal", header: "Waste", width: "80px", align: "right", render: (v) => {
+      const pct = Math.round(v * 100);
+      return <span className={`ri-waste ${v >= 0.7 ? "ri-waste-high" : v >= 0.4 ? "ri-waste-med" : ""}`}>{pct}%</span>;
+    }, sortValue: (row) => row.waste_signal },
+    { key: "sla", header: "SLA", width: "70px", render: (v) => <span className={`ri-sla ri-sla-${v.toLowerCase()}`}>{v}</span> },
+    { key: "risk", header: "Risk", width: "70px", render: (v) => <RiskBadge risk={v} /> },
+  ];
+
+  const expandedContent = (row) => (
+    <div className="ri-detail">
+      <div className="ri-detail-grid">
+        <div><span className="ri-detail-label">Resource ID</span><span className="ri-detail-value">{row.resource_id}</span></div>
+        <div><span className="ri-detail-label">Type</span><span className="ri-detail-value">{row.typeLabel}</span></div>
+        <div><span className="ri-detail-label">Monthly Cost</span><span className="ri-detail-value">{fmtMoney(row.monthly_cost)}</span></div>
+        <div><span className="ri-detail-label">Status</span><span className="ri-detail-value">{toTitleCase(row.rawStatus)}</span></div>
+        <div><span className="ri-detail-label">Waste Signal</span><span className="ri-detail-value">{Math.round(row.waste_signal * 100)}%</span></div>
+        <div><span className="ri-detail-label">Risk Level</span><span className="ri-detail-value">{toTitleCase(row.risk)}</span></div>
+        <div><span className="ri-detail-label">SLA Tier</span><span className="ri-detail-value">{row.sla}</span></div>
+        {Object.keys(row.tags).length > 0 && (
+          <div className="ri-detail-tags">
+            <span className="ri-detail-label">Tags</span>
+            <div className="ri-tag-list">
+              {Object.entries(row.tags).map(([k, v]) => (
+                <span className="ri-tag" key={k}>{k}: {v}</span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const totalCost = filteredRows.reduce((sum, r) => sum + r.monthly_cost, 0);
+
+  return (
+    <>
+      <div className="page-header">
+        <div>
+          <h2 className="page-title">Resource Inventory</h2>
+          <p className="page-subtitle">{rows.length} resources · {fmtMoney(totalCost)} monthly spend</p>
+        </div>
+      </div>
+
+      {error && <p className="error-text">{error}</p>}
+
+      <div className="ri-summary-bar">
+        {Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
+          <button
+            key={type}
+            className={`ri-type-chip ${filters.type === type ? "ri-type-active" : ""}`}
+            onClick={() => setFilters((f) => ({ ...f, type: f.type === type ? "" : type }))}
+          >
+            <span className="ri-type-label">{resourceTypeLabel(type)}</span>
+            <CountBadge count={count} />
+          </button>
+        ))}
+      </div>
+
+      <SectionCard noPadding>
+        <FilterBar
+          filters={filterDefs}
+          values={filters}
+          onChange={(key, val) => setFilters((f) => ({ ...f, [key]: val }))}
+          searchPlaceholder="Search by ID or type..."
+          searchValue={search}
+          onSearchChange={setSearch}
+          onClearAll={() => { setFilters({}); setSearch(""); }}
+        />
+        {loading ? (
+          <div className="ri-loading"><p>Loading resources...</p></div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={filteredRows}
+            rowKeyField="resource_id"
+            expandedContent={expandedContent}
+            stickyHeader
+            emptyMessage="No resources match the current filters."
+          />
+        )}
+      </SectionCard>
+    </>
+  );
+}
+
 function StubPage({ icon, title, description }) {
   return (
     <div className="stub-page">
@@ -1240,7 +1436,7 @@ function AppShell() {
             </Suspense>
           } />
           <Route path="/resources" element={
-            <StubPage icon="resources" title="Resource Inventory" description="Full table of all cloud resources with type, cost, status, waste signals, and SLA badges. Coming in the next update." />
+            <ResourceInventoryPage task={task} seed={seed} />
           } />
           <Route path="/waste" element={
             <StubPage icon="waste" title="Waste Detector" description="Prioritized waste signal detection with severity rankings and estimated savings per resource. Coming in the next update." />

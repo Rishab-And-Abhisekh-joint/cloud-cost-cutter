@@ -546,6 +546,147 @@ body {
   opacity: 0.8;
 }
 
+.ri-summary-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.ri-type-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.ri-type-chip:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
+}
+
+.ri-type-active {
+  border-color: var(--green-500);
+  background: var(--green-50);
+  color: var(--green-600);
+}
+
+.ri-type-label {
+  font-weight: 500;
+}
+
+.ri-id {
+  font-family: "SF Mono", "Consolas", monospace;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+
+.ri-cost {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ri-waste {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ri-waste-high {
+  color: #ef4444;
+}
+
+.ri-waste-med {
+  color: #f59e0b;
+}
+
+.ri-sla {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+}
+
+.ri-sla-prod {
+  background: var(--red-50);
+  color: var(--red-500);
+}
+
+.ri-sla-staging {
+  background: var(--amber-50);
+  color: var(--amber-500);
+}
+
+.ri-sla-dev {
+  background: var(--blue-50);
+  color: var(--blue-500);
+}
+
+.ri-detail {
+  padding: 8px 0;
+}
+
+.ri-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.ri-detail-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ri-detail-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.ri-detail-value {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.ri-detail-tags {
+  grid-column: span 4;
+}
+
+.ri-tag-list {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.ri-tag {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+.ri-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
 .ov-rec-table {
   font-size: 0.8rem;
 }
