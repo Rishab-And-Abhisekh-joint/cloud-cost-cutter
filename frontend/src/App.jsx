@@ -1032,7 +1032,9 @@ function ResourceInventoryPage({ task, seed }) {
       setLoading(true);
       setError("");
       try {
-        const data = await request(`/live/resources?task_name=${task}&seed=${seed}`);
+        const params = new URLSearchParams({ task_name: task });
+        if (seed != null && seed !== "") params.set("seed", seed);
+        const data = await request(`/live/resources?${params}`);
         if (!cancelled) setResources(data || []);
       } catch (err) {
         if (!cancelled) setError(err.message);
