@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams, Link } from "react-router-dom";
 
 const LazyUseCaseCharts = lazy(() => import("../UseCaseCharts"));
 
@@ -75,6 +75,12 @@ function UseCasePage({
       <Suspense fallback={<p className="chart-empty">Loading chart modules...</p>}>
         <LazyUseCaseCharts profile={chosenProfile} liveDashboard={liveDashboard} />
       </Suspense>
+
+      <div style={{ margin: "16px 0", textAlign: "center" }}>
+        <Link to="/cost-analytics" className="btn-outline" style={{ display: "inline-block", padding: "8px 16px", textDecoration: "none", fontSize: "0.8rem", fontWeight: 600 }}>
+          View Full Cost Analytics →
+        </Link>
+      </div>
 
       <section className="profile-stack">
         <ProfileCard title="Use-Case Preview" profile={scopedPreview} />

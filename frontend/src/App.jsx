@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useState, useCallback } from "react";
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate, useLocation } from "react-router-dom";
-import { AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { AreaChart, Area, BarChart, Bar, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { MetricCard, SectionCard, RiskBadge, DataTable, FilterBar, StatusBadge, CountBadge, ConfirmModal } from "./components/shared";
 
 const TASKS = ["cleanup", "rightsize", "full_optimization"];
@@ -1432,13 +1432,14 @@ function CostAnalyticsPage({ task, seed, previewProfile, liveDashboard }) {
 
   const resourceData = useMemo(() => {
     const r = profile?.resources || {};
+    const costEstimates = { Compute: 350, Volumes: 40, Databases: 250, "Load Balancers": 80, Snapshots: 5, "Elastic IPs": 4 };
     return [
-      { name: "Compute", count: r.compute || 0 },
-      { name: "Volumes", count: r.volumes || 0 },
-      { name: "Databases", count: r.databases || 0 },
-      { name: "Load Balancers", count: r.load_balancers || 0 },
-      { name: "Snapshots", count: r.snapshots || 0 },
-      { name: "Elastic IPs", count: r.elastic_ips || 0 },
+      { name: "Compute", count: r.compute || 0, cost: (r.compute || 0) * costEstimates.Compute },
+      { name: "Volumes", count: r.volumes || 0, cost: (r.volumes || 0) * costEstimates.Volumes },
+      { name: "Databases", count: r.databases || 0, cost: (r.databases || 0) * costEstimates.Databases },
+      { name: "Load Balancers", count: r.load_balancers || 0, cost: (r.load_balancers || 0) * costEstimates["Load Balancers"] },
+      { name: "Snapshots", count: r.snapshots || 0, cost: (r.snapshots || 0) * costEstimates.Snapshots },
+      { name: "Elastic IPs", count: r.elastic_ips || 0, cost: (r.elastic_ips || 0) * costEstimates["Elastic IPs"] },
     ].filter((d) => d.count > 0);
   }, [profile]);
 
@@ -1503,15 +1504,15 @@ function CostAnalyticsPage({ task, seed, previewProfile, liveDashboard }) {
       {activeTab === "breakdown" && (
         <div className="ca-content">
           <div className="ca-chart-grid">
-            <SectionCard title="Cost by Resource Type">
+            <SectionCard title="Estimated Cost by Resource Type">
               {resourceData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={resourceData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="name" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
-                    <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.8rem" }} />
-                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
+                    <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.8rem" }} formatter={(v) => fmtMoney(v)} />
+                    <Bar dataKey="cost" name="Est. Cost" radius={[4, 4, 0, 0]}>
                       {resourceData.map((_, i) => (
                         <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                       ))}
@@ -1565,16 +1566,18 @@ function CostAnalyticsPage({ task, seed, previewProfile, liveDashboard }) {
           </div>
 
           <div className="ca-chart-grid">
-            <SectionCard title="Savings per Action">
+            <SectionCard title="Savings Over Time">
               {historyTrend.length > 0 ? (
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={historyTrend}>
+                  <LineChart data={historyTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="step" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
                     <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
                     <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.8rem" }} formatter={(v) => fmtMoney(v)} />
-                    <Bar dataKey="savings" name="Step Savings" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                    <Legend />
+                    <Line type="monotone" dataKey="savings" name="Step Savings" stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="cumulative" name="Cumulative" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 3 }} />
+                  </LineChart>
                 </ResponsiveContainer>
               ) : <p className="ca-empty">No action history yet. Apply actions to see savings trends.</p>}
             </SectionCard>
