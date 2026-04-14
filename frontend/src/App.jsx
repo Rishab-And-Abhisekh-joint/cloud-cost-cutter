@@ -7,22 +7,21 @@ const TASKS = ["cleanup", "rightsize", "full_optimization"];
 const DEFAULT_PROD_API_BASE_URL = "https://cloud-cost-env-api-production.up.railway.app";
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_REQUEST_TIMEOUT_MS || 15000);
 const REQUEST_RETRIES = Number(import.meta.env.VITE_REQUEST_RETRIES || 2);
-const THEME_STORAGE_KEY = "cc-theme";
 const LazyUseCaseRoutePage = lazy(() => import("./routes/UseCaseRoutePage"));
 const LazyRLStatusPage = lazy(() => import("./routes/RLStatusPage"));
 
 const TASK_META = {
   cleanup: {
-    title: "Cleanup",
-    description: "Removes idle and orphaned assets to recover quick savings.",
+    title: "Cleanup Sweep",
+    description: "Quick wins: remove unattached resources, stale snapshots, and idle artifacts.",
   },
   rightsize: {
-    title: "Rightsize",
-    description: "Tunes compute and database capacity to reduce excess spend.",
+    title: "Rightsize Track",
+    description: "Capacity tuning for compute and data tiers while preserving SLA safety.",
   },
   full_optimization: {
     title: "Full Optimization",
-    description: "Combines cleanup and rightsize decisions into a complete savings path.",
+    description: "Max savings path combining cleanup, rightsizing, scheduling, and guarded apply actions.",
   },
 };
 
@@ -67,61 +66,6 @@ function fmtPercent(value) {
 function sumValues(record) {
   if (!record || typeof record !== "object") return 0;
   return Object.values(record).reduce((acc, value) => acc + Number(value || 0), 0);
-}
-
-function sanitizeText(value) {
-  if (value === null || value === undefined) {
-    return "-";
-  }
-  const text = String(value).trim();
-  return text ? text : "-";
-}
-
-function riskBadgeClass(risk) {
-  const normalized = String(risk || "").toLowerCase();
-  if (normalized === "high") {
-    return "badge-high";
-  }
-  if (normalized === "medium") {
-    return "badge-warning";
-  }
-  if (normalized === "low") {
-    return "badge-success";
-  }
-  return "badge-neutral";
-}
-
-function actionBadgeClass(value) {
-  const normalized = String(value || "").toLowerCase();
-  if (normalized === "high") {
-    return "badge-critical";
-  }
-  if (normalized === "medium") {
-    return "badge-warning";
-  }
-  return "badge-success";
-}
-
-function recLabel(actionType) {
-  if (actionType === "stop_instance") {
-    return "Stop Instance";
-  }
-  if (actionType === "terminate_instance") {
-    return "Terminate Instance";
-  }
-  if (actionType === "release_eip") {
-    return "Release EIP";
-  }
-  if (actionType === "delete_snapshot") {
-    return "Delete Snapshot";
-  }
-  if (actionType === "delete_load_balancer") {
-    return "Delete Load Balancer";
-  }
-  if (actionType === "rightsize_instance") {
-    return "Rightsize Instance";
-  }
-  return "Delete Volume";
 }
 
 async function request(path, options = {}) {
@@ -302,18 +246,12 @@ function recLabel(actionType) {
   return "Delete Volume";
 }
 
-function buildSavingsTrend(actionHistory) {
-  const recent = (actionHistory || []).slice(-12);
-  let cumulative = 0;
-  return recent.map((item, index) => {
-    const savings = item?.ok ? Number(item.estimated_monthly_savings_usd || 0) : 0;
-    cumulative += savings;
-    return {
-      step: `S${index + 1}`,
-      savings: Number(savings.toFixed(2)),
-      cumulative: Number(cumulative.toFixed(2)),
-    };
-  });
+function liveDashboardPath(task, seed) {
+  const params = new URLSearchParams({ task_name: task });
+  if (String(seed).trim() !== "") {
+    params.set("seed", String(seed).trim());
+  }
+  return `/live/dashboard?${params.toString()}`;
 }
 
 function signalLabel(actionType) {
@@ -471,44 +409,13 @@ function CostBreakdownChart({ cost }) {
 function ProfileCard({ title, profile }) {
   if (!profile) {
     return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M3 4h6v5H3V4zm8 0h6v8h-6V4zM3 11h6v5H3v-5zm8 3h6v2h-6v-2z" />
-      </svg>
-    );
-  }
-  if (name === "resources") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M10 2l7 3.5v9L10 18l-7-3.5v-9L10 2zm0 2.1L5 6.6l5 2.5 5-2.5L10 4.1zM5 8.6v4.8l4 2v-4.8l-4-2zm10 0l-4 2v4.8l4-2V8.6z" />
-      </svg>
-    );
-  }
-  if (name === "cost") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M3 15h2V9H3v6zm4 0h2V5H7v10zm4 0h2v-3h-2v3zm4 0h2V7h-2v8z" />
-      </svg>
-    );
-  }
-  if (name === "waste") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M6 4h8l1 2h2v2H3V6h2l1-2zm0 5h2v6H6V9zm4 0h2v6h-2V9zm4 0h2v6h-2V9z" />
-      </svg>
-    );
-  }
-  if (name === "actions") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M12.8 3a4 4 0 10.2 8l3.8 3.8 1.4-1.4-3.8-3.8A4 4 0 0012.8 3zM6 10l2 2-4 4H2v-2l4-4z" />
-      </svg>
-    );
-  }
-  if (name === "scenario") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M10 2l8 4v8l-8 4-8-4V6l8-4zm0 2.2L4 7v6l6 3 6-3V7l-6-2.8z" />
-      </svg>
+      <article className="profile-card muted profile-loading">
+        <header>
+          <h3>{title}</h3>
+          <p>Waiting for data</p>
+        </header>
+        <p>No profile loaded yet.</p>
+      </article>
     );
   }
 
@@ -544,59 +451,6 @@ function ProfileCard({ title, profile }) {
         <div><p>Dependency Edges</p><strong>{Number(safety.dependency_edges || 0)}</strong></div>
         <div><p>Snapshots</p><strong>{Number(resources.snapshots || 0)}</strong></div>
       </div>
-
-      <div className="metric-grid compact-grid">
-        <MetricCard label="Total Waste Detected" value={String(wasteTotal)} helper="Signals from active profile" />
-        <MetricCard label="Idle Resources" value={String(idleResources)} helper="Idle compute + idle status" />
-        <MetricCard label="Orphaned Resources" value={String(orphanedResources)} helper="Orphaned volumes and unattached IPs" />
-        <MetricCard label="Pending Actions" value={String(pendingActions)} helper="Current recommendation queue" />
-      </div>
-
-      <div className="action-list">
-        {recommendations.length ? (
-          recommendations.map((rec) => {
-            const dryKey = `${rec.action_type}:${rec.resource_id}:dry`;
-            const applyKey = `${rec.action_type}:${rec.resource_id}:apply`;
-            return (
-              <div className="action-row" key={`${rec.action_type}:${rec.resource_id}`}>
-                <div className="action-row-main">
-                  <p className="action-title">{recLabel(rec.action_type)}</p>
-                  <p className="action-subtext">
-                    {sanitizeText(rec.resource_id)} · {sanitizeText(rec.resource_name)}
-                  </p>
-                  <p className="action-subtext">{sanitizeText(rec.reason)}</p>
-                </div>
-
-                <div className="action-row-meta">
-                  <span className={`badge ${actionBadgeClass(rec.risk)}`}>{sanitizeText(rec.risk)}</span>
-                  <span className="badge badge-info">{fmtMoney(rec.estimated_monthly_savings_usd)}</span>
-                </div>
-
-                <div className="action-row-buttons">
-                  <button
-                    type="button"
-                    className="btn-outline btn-sm"
-                    disabled={liveBusyKey !== ""}
-                    onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, false)}
-                  >
-                    {liveBusyKey === dryKey ? "Running..." : "Dry Run"}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-solid btn-sm"
-                    disabled={liveBusyKey !== "" || !canApplyActions}
-                    onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, true)}
-                  >
-                    {liveBusyKey === applyKey ? "Applying..." : "Apply"}
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <p className="empty-text">No pending actions. Refresh live data to load recommendations.</p>
-        )}
-      </div>
     </article>
   );
 }
@@ -608,14 +462,24 @@ function ResourceMap({ counts }) {
   }
   const maxValue = Number(entries[0][1] || 1);
   return (
-    <>
-      <article className="section-card" id="cost-analytics">
-        <div className="section-header">
-          <div className="section-title-wrap">
-            <span className="section-icon">{sidebarIcon("cost")}</span>
-            <h3>Cost Analytics Breakdown</h3>
+    <div className="resource-map">
+      {entries.map(([name, value]) => {
+        const pct = Math.max(5, (Number(value || 0) / maxValue) * 100);
+        return (
+          <div className="resource-row" key={name}>
+            <div className="resource-meta">
+              <span>{name.replace(/_/g, " ")}</span>
+              <strong>{Number(value || 0)}</strong>
+            </div>
+            <div className="resource-bar-track">
+              <div className="resource-bar-fill" style={{ width: `${pct}%` }} />
+            </div>
           </div>
-        </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function SavingsTrend({ recommendations, actionHistory }) {
   const ranked = (recommendations || [])
@@ -1908,7 +1772,6 @@ function Sidebar({ sidebarOpen, onToggleSidebar, theme, onToggleTheme }) {
 
 function AppShell() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [theme, setTheme] = useState(() => {
     try {
@@ -1922,7 +1785,6 @@ function AppShell() {
   const [health, setHealth] = useState("checking");
   const [activeProfile, setActiveProfile] = useState(null);
   const [previewProfile, setPreviewProfile] = useState(null);
-  const [scenarioProfiles, setScenarioProfiles] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [liveDashboard, setLiveDashboard] = useState(null);
@@ -1933,17 +1795,6 @@ function AppShell() {
   const [rlStatus, setRlStatus] = useState(null);
   const [rlLoading, setRlLoading] = useState(false);
   const [rlError, setRlError] = useState("");
-  const [resourceRows, setResourceRows] = useState([]);
-  const [resourcesLoading, setResourcesLoading] = useState(false);
-  const [resourcesError, setResourcesError] = useState("");
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") {
-      return "light";
-    }
-    const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return saved === "dark" ? "dark" : "light";
-  });
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -1961,15 +1812,6 @@ function AppShell() {
   const optimizationPressure = currentCost > 0 ? Math.min(100, (potentialSavings / currentCost) * 100) : 0;
   const currentTaskName = activeProfile?.task_name || task;
   const activeStep = Number(activeProfile?.step_count || 0);
-
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-theme", theme);
-    }
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-    }
-  }, [theme]);
 
   useEffect(() => {
     async function bootstrap() {
@@ -2003,57 +1845,6 @@ function AppShell() {
     try { const preview = await request(`/profile?task_name=${taskName}&seed=${seedValue}`, { method: "GET" }); setPreviewProfile(preview); }
     catch (err) { setError(`Preview failed: ${err.message}`); }
     finally { if (showSpinner) setLoading(false); }
-  }
-
-  async function refreshLiveDashboard(showSpinner = true, taskName = task, seedValue = seed) {
-    if (showSpinner) {
-      setLiveLoading(true);
-    }
-    setLiveError("");
-
-    try {
-      const dashboard = await request(`/live/dashboard?task_name=${taskName}&seed=${seedValue}`, { method: "GET" });
-      setLiveDashboard(dashboard);
-    } catch (err) {
-      setLiveError(`Live dashboard failed: ${err.message}`);
-    } finally {
-      if (showSpinner) {
-        setLiveLoading(false);
-      }
-    }
-  }
-
-  async function refreshLiveResources(showSpinner = true, taskName = task, seedValue = seed) {
-    if (showSpinner) {
-      setResourcesLoading(true);
-    }
-    setResourcesError("");
-
-    try {
-      const rows = await request(`/live/resources?task_name=${taskName}&seed=${seedValue}`, { method: "GET" });
-      setResourceRows(Array.isArray(rows) ? rows : []);
-    } catch (err) {
-      setResourcesError(`Resource inventory failed: ${err.message}`);
-      setResourceRows([]);
-    } finally {
-      if (showSpinner) {
-        setResourcesLoading(false);
-      }
-    }
-  }
-
-  async function refreshScenarioProfiles(taskName = task, seedValue = seed) {
-    const entries = await Promise.all(
-      TASKS.map(async (taskKey) => {
-        try {
-          const profile = await request(`/profile?task_name=${taskKey}&seed=${seedValue}`, { method: "GET" });
-          return [taskKey, profile];
-        } catch {
-          return [taskKey, null];
-        }
-      })
-    );
-    setScenarioProfiles(Object.fromEntries(entries));
   }
 
   async function startEpisode(taskName = task, seedValue = seed) {
