@@ -194,6 +194,92 @@ class LiveActionRequest(BaseModel):
     apply: bool = False
 
 
+class LiveActionSpec(BaseModel):
+    action_type: Literal[
+        "stop_instance",
+        "release_eip",
+        "delete_snapshot",
+        "delete_volume",
+        "terminate_instance",
+        "delete_load_balancer",
+        "rightsize_instance",
+    ]
+    resource_id: str
+
+
+class LiveImpactMetrics(BaseModel):
+    latency_delta_ms: float = 0.0
+    throughput_delta_pct: float = 0.0
+    error_rate_delta_pct: float = 0.0
+    alert_probability_pct: float = 0.0
+
+
+class LiveImpactPrediction(BaseModel):
+    action: LiveActionSpec
+    executable: bool = False
+    predicted_monthly_savings_usd: float = 0.0
+    predicted_step_reward: float = 0.0
+    risk_level: Literal["low", "medium", "high", "critical"] = "low"
+    confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    impacted_dependencies: list[str] = Field(default_factory=list)
+    sla_risks: list[str] = Field(default_factory=list)
+    required_followups: list[str] = Field(default_factory=list)
+    metrics: LiveImpactMetrics = Field(default_factory=LiveImpactMetrics)
+    rationale: str = ""
+
+
+class LivePlanStep(BaseModel):
+    order: int
+    action_type: str
+    resource_id: str
+    resource_name: str
+    predicted_monthly_savings_usd: float = 0.0
+    risk_level: Literal["low", "medium", "high", "critical"] = "low"
+    dependency_impact_count: int = 0
+    rationale: str = ""
+
+
+class LiveOptimizationPlan(BaseModel):
+    generated_at: str
+    control_mode: str
+    task_name: str
+    seed: int | None = None
+    projected_total_savings_usd: float = 0.0
+    projected_total_risk_score: float = 0.0
+    steps: list[LivePlanStep] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+class LiveSandboxRequest(BaseModel):
+    task_name: str = "full_optimization"
+    seed: int | None = None
+    actions: list[LiveActionSpec] = Field(default_factory=list)
+
+
+class LiveSandboxStep(BaseModel):
+    order: int
+    action_type: str
+    resource_id: str
+    ok: bool = False
+    message: str
+    predicted_monthly_savings_usd: float = 0.0
+    risk_level: Literal["low", "medium", "high", "critical"] = "low"
+    impacted_dependencies: list[str] = Field(default_factory=list)
+    sla_risks: list[str] = Field(default_factory=list)
+
+
+class LiveSandboxResult(BaseModel):
+    task_name: str
+    seed: int | None = None
+    generated_at: str
+    projected_monthly_cost_before_usd: float = 0.0
+    projected_monthly_cost_after_usd: float = 0.0
+    projected_monthly_savings_usd: float = 0.0
+    residual_risk_level: Literal["low", "medium", "high", "critical"] = "low"
+    steps: list[LiveSandboxStep] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
 class AzureApprovalChallenge(BaseModel):
     token: str
     expires_at: str

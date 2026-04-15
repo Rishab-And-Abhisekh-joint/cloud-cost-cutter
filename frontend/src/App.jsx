@@ -1211,6 +1211,13 @@ function severityLevel(sev) {
   return "success";
 }
 
+function riskLevelToBadge(level) {
+  if (level === "critical") return "critical";
+  if (level === "high") return "high";
+  if (level === "medium") return "warning";
+  return "success";
+}
+
 function actionTypeIcon(type) {
   const map = {
     stop_instance: "⏹",
@@ -1224,10 +1231,20 @@ function actionTypeIcon(type) {
   return map[type] || "⚡";
 }
 
-function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, liveBusyKey, onRefreshLive, onRunLiveAction }) {
+function ActionCenterPage({ task, seed, liveDashboard, liveLoading, liveError, liveMessage, liveBusyKey, onRefreshLive, onRunLiveAction }) {
   const [dismissed, setDismissed] = useState(new Set());
   const [confirmAction, setConfirmAction] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [impactLoadingKey, setImpactLoadingKey] = useState("");
+  const [impactPreview, setImpactPreview] = useState(null);
+  const [impactError, setImpactError] = useState("");
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planError, setPlanError] = useState("");
+  const [optimizationPlan, setOptimizationPlan] = useState(null);
+  const [sandboxSelection, setSandboxSelection] = useState(new Set());
+  const [sandboxLoading, setSandboxLoading] = useState(false);
+  const [sandboxError, setSandboxError] = useState("");
+  const [sandboxResult, setSandboxResult] = useState(null);
 
   const recommendations = liveDashboard?.recommendations || [];
   const actionHistory = liveDashboard?.action_history || [];
@@ -1246,13 +1263,38 @@ function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, 
     return recommendations.filter((r) => !dismissed.has(`${r.action_type}:${r.resource_id}`));
   }, [recommendations, dismissed]);
 
+  useEffect(() => {
+    const activeKeys = new Set(recommendations.map((r) => `${r.action_type}:${r.resource_id}`));
+    setSandboxSelection((prev) => new Set([...prev].filter((key) => activeKeys.has(key))));
+    setImpactPreview((prev) => {
+      if (!prev?.action) return prev;
+      const key = `${prev.action.action_type}:${prev.action.resource_id}`;
+      return activeKeys.has(key) ? prev : null;
+    });
+  }, [recommendations]);
+
   const totalWaste = wasteSignals.reduce((s, w) => s + w.estimated_monthly_savings_usd, 0);
   const totalPending = activeRecs.length;
   const totalApplied = actionHistory.filter((a) => a.executed).length;
   const totalSavingsApplied = actionHistory.filter((a) => a.executed).reduce((s, a) => s + a.estimated_monthly_savings_usd, 0);
+  const selectedCount = sandboxSelection.size;
+
+  function taskSeedQuery() {
+    const query = new URLSearchParams({ task_name: task || "full_optimization" });
+    const cleanSeed = String(seed || "").trim();
+    if (cleanSeed !== "") query.set("seed", cleanSeed);
+    return query.toString();
+  }
 
   function handleDismiss(rec) {
-    setDismissed((prev) => new Set(prev).add(`${rec.action_type}:${rec.resource_id}`));
+    const key = `${rec.action_type}:${rec.resource_id}`;
+    setDismissed((prev) => new Set(prev).add(key));
+    setSandboxSelection((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
   }
 
   function handleApplyClick(rec) {
@@ -1266,16 +1308,93 @@ function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, 
     }
   }
 
+  async function simulateBlastRadius(rec) {
+    const recKey = `${rec.action_type}:${rec.resource_id}`;
+    setImpactLoadingKey(recKey);
+    setImpactError("");
+    try {
+      const data = await request(`/live/simulate-action?${taskSeedQuery()}`, {
+        method: "POST",
+        body: JSON.stringify({ action_type: rec.action_type, resource_id: rec.resource_id }),
+      });
+      setImpactPreview(data);
+    } catch (err) {
+      setImpactError(`Simulation failed: ${err.message}`);
+    } finally {
+      setImpactLoadingKey("");
+    }
+  }
+
+  async function generateOptimizationPlan() {
+    setPlanLoading(true);
+    setPlanError("");
+    try {
+      const data = await request(`/live/plan?${taskSeedQuery()}&max_steps=5`, { method: "GET" });
+      setOptimizationPlan(data);
+    } catch (err) {
+      setPlanError(`Plan generation failed: ${err.message}`);
+    } finally {
+      setPlanLoading(false);
+    }
+  }
+
+  function toggleSandboxSelectionFor(rec) {
+    const key = `${rec.action_type}:${rec.resource_id}`;
+    setSandboxSelection((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  async function runSandbox() {
+    const selectedActions = activeRecs
+      .filter((rec) => sandboxSelection.has(`${rec.action_type}:${rec.resource_id}`))
+      .map((rec) => ({ action_type: rec.action_type, resource_id: rec.resource_id }));
+
+    if (!selectedActions.length) {
+      setSandboxError("Select at least one action from the queue.");
+      return;
+    }
+
+    setSandboxLoading(true);
+    setSandboxError("");
+    try {
+      const payload = {
+        task_name: task || "full_optimization",
+        actions: selectedActions,
+      };
+      const parsedSeed = Number(String(seed || "").trim());
+      if (Number.isFinite(parsedSeed)) payload.seed = parsedSeed;
+
+      const data = await request("/live/sandbox", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      setSandboxResult(data);
+    } catch (err) {
+      setSandboxError(`Sandbox simulation failed: ${err.message}`);
+    } finally {
+      setSandboxLoading(false);
+    }
+  }
+
   return (
     <>
       <div className="page-header">
         <div>
           <h2 className="page-title">Waste Detector & Action Center</h2>
-          <p className="page-subtitle">Identify waste and apply agent-recommended optimizations</p>
+          <p className="page-subtitle">Simulate blast radius, generate sequenced plans, and validate what-if scenarios before apply.</p>
         </div>
-        <button className="btn-outline btn-sm" onClick={() => onRefreshLive()} disabled={liveLoading}>
-          {liveLoading ? "Refreshing..." : "Refresh"}
-        </button>
+        <div className="page-header-actions">
+          <button className="btn-outline btn-sm" onClick={() => onRefreshLive()} disabled={liveLoading}>
+            {liveLoading ? "Refreshing..." : "Refresh"}
+          </button>
+          <button className="btn-outline btn-sm" onClick={generateOptimizationPlan} disabled={planLoading}>
+            {planLoading ? "Building Plan..." : "Build Optimization Plan"}
+          </button>
+        </div>
       </div>
 
       {liveError && <p className="error-text">{liveError}</p>}
@@ -1285,7 +1404,7 @@ function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, 
         <MetricCard label="Total Waste Detected" value={fmtMoney(totalWaste)} helper="potential monthly savings" />
         <MetricCard label="Actions Pending" value={totalPending} helper={`of ${recommendations.length} recommendations`} />
         <MetricCard label="Actions Applied" value={totalApplied} helper={fmtMoney(totalSavingsApplied) + " saved"} />
-        <MetricCard label="Waste Signals" value={wasteSignals.length} helper="resources with savings" />
+        <MetricCard label="Sandbox Selected" value={selectedCount} helper="actions in what-if run" />
       </div>
 
       <div className="ac-panels">
@@ -1321,8 +1440,10 @@ function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, 
           ) : (
             <div className="ac-action-list">
               {activeRecs.map((rec, idx) => {
+                const recKey = `${rec.action_type}:${rec.resource_id}`;
                 const busyDry = liveBusyKey === `${rec.action_type}:${rec.resource_id}:dry`;
                 const busyApply = liveBusyKey === `${rec.action_type}:${rec.resource_id}:apply`;
+                const busyImpact = impactLoadingKey === recKey;
                 return (
                   <div key={`${rec.action_type}-${rec.resource_id}-${idx}`} className="ac-action-card">
                     <div className="ac-action-header">
@@ -1337,17 +1458,28 @@ function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, 
                     <div className="ac-action-footer">
                       <span className="ac-action-savings">{fmtMoney(rec.estimated_monthly_savings_usd)}/mo savings</span>
                       <div className="ac-action-buttons">
-                        <button className="btn-ghost btn-sm" onClick={() => handleDismiss(rec)} disabled={busyDry || busyApply}>Dismiss</button>
-                        <button className="btn-outline btn-sm" onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, false)} disabled={busyDry || busyApply}>
+                        <button className="btn-ghost btn-sm" onClick={() => handleDismiss(rec)} disabled={busyDry || busyApply || busyImpact}>Dismiss</button>
+                        <button className="btn-outline btn-sm" onClick={() => simulateBlastRadius(rec)} disabled={busyDry || busyApply || busyImpact}>
+                          {busyImpact ? "Simulating..." : "Simulate"}
+                        </button>
+                        <button className="btn-outline btn-sm" onClick={() => onRunLiveAction(rec.action_type, rec.resource_id, false)} disabled={busyDry || busyApply || busyImpact}>
                           {busyDry ? "Running..." : "Dry Run"}
                         </button>
                         {canApply && (
-                          <button className="btn-solid btn-sm" onClick={() => handleApplyClick(rec)} disabled={busyDry || busyApply}>
+                          <button className="btn-solid btn-sm" onClick={() => handleApplyClick(rec)} disabled={busyDry || busyApply || busyImpact}>
                             {busyApply ? "Applying..." : "Apply"}
                           </button>
                         )}
                       </div>
                     </div>
+                    <label className="ac-sandbox-select">
+                      <input
+                        type="checkbox"
+                        checked={sandboxSelection.has(recKey)}
+                        onChange={() => toggleSandboxSelectionFor(rec)}
+                      />
+                      Add to what-if sandbox
+                    </label>
                   </div>
                 );
               })}
@@ -1355,6 +1487,110 @@ function ActionCenterPage({ liveDashboard, liveLoading, liveError, liveMessage, 
           )}
         </SectionCard>
       </div>
+
+      <div className="ac-strategy-grid">
+        <SectionCard title="Blast Radius Prediction" badge={impactPreview ? `${toTitleCase(impactPreview.risk_level)} Risk` : "simulate any action"}>
+          {impactError && <p className="error-text">{impactError}</p>}
+          {impactPreview ? (
+            <>
+              <div className="ac-impact-head">
+                <strong>{toTitleCase(impactPreview.action.action_type)}</strong>
+                <span className="ac-impact-resource">{impactPreview.action.resource_id}</span>
+                <StatusBadge level={riskLevelToBadge(impactPreview.risk_level)} label={toTitleCase(impactPreview.risk_level)} />
+              </div>
+              <p className="ac-impact-rationale">{impactPreview.rationale}</p>
+              <div className="ac-impact-metrics">
+                <div className="ac-impact-metric"><span>Latency</span><strong>+{impactPreview.metrics.latency_delta_ms} ms</strong></div>
+                <div className="ac-impact-metric"><span>Throughput</span><strong>{impactPreview.metrics.throughput_delta_pct}%</strong></div>
+                <div className="ac-impact-metric"><span>Error Rate</span><strong>+{impactPreview.metrics.error_rate_delta_pct}%</strong></div>
+                <div className="ac-impact-metric"><span>Alert Probability</span><strong>{impactPreview.metrics.alert_probability_pct}%</strong></div>
+              </div>
+              <div className="ac-impact-summary">
+                <span>Predicted Savings <strong>{fmtMoney(impactPreview.predicted_monthly_savings_usd)}/mo</strong></span>
+                <span>Confidence <strong>{Math.round((impactPreview.confidence || 0) * 100)}%</strong></span>
+              </div>
+              {impactPreview.impacted_dependencies?.length > 0 && (
+                <div className="ac-impact-list">
+                  <h4>Dependency Impacts</h4>
+                  <ul>
+                    {impactPreview.impacted_dependencies.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+              )}
+              {impactPreview.required_followups?.length > 0 && (
+                <div className="ac-impact-list">
+                  <h4>Required Follow-ups</h4>
+                  <ul>
+                    {impactPreview.required_followups.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="ac-empty"><p>Use Simulate on any action to preview dependency and SLA blast radius.</p></div>
+          )}
+        </SectionCard>
+
+        <SectionCard
+          title="Optimization Sequence Plan"
+          badge={optimizationPlan?.steps?.length ? `${optimizationPlan.steps.length} steps` : null}
+          actions={<button className="btn-outline btn-sm" onClick={generateOptimizationPlan} disabled={planLoading}>{planLoading ? "Building..." : "Rebuild"}</button>}
+        >
+          {planError && <p className="error-text">{planError}</p>}
+          {optimizationPlan?.steps?.length ? (
+            <div className="ac-plan-list">
+              {optimizationPlan.steps.map((step) => (
+                <div key={`${step.order}-${step.resource_id}-${step.action_type}`} className="ac-plan-step">
+                  <div className="ac-plan-order">{step.order}</div>
+                  <div className="ac-plan-main">
+                    <p className="ac-plan-title">{toTitleCase(step.action_type)} <span>{step.resource_name || step.resource_id}</span></p>
+                    <p className="ac-plan-note">{step.rationale}</p>
+                  </div>
+                  <div className="ac-plan-meta">
+                    <strong>{fmtMoney(step.predicted_monthly_savings_usd)}/mo</strong>
+                    <StatusBadge level={riskLevelToBadge(step.risk_level)} label={toTitleCase(step.risk_level)} />
+                  </div>
+                </div>
+              ))}
+              <div className="ac-plan-total">
+                <span>Projected Plan Savings</span>
+                <strong>{fmtMoney(optimizationPlan.projected_total_savings_usd)}/mo</strong>
+              </div>
+            </div>
+          ) : (
+            <div className="ac-empty"><p>Generate a sequenced optimization plan to prioritize actions safely.</p></div>
+          )}
+        </SectionCard>
+      </div>
+
+      <SectionCard
+        title="What-If Sandbox"
+        badge={selectedCount ? `${selectedCount} selected` : "select actions from queue"}
+        actions={<button className="btn-outline btn-sm" onClick={runSandbox} disabled={sandboxLoading || selectedCount === 0}>{sandboxLoading ? "Running..." : "Run Sandbox"}</button>}
+      >
+        <p className="ac-sandbox-caption">Run selected actions on an isolated snapshot to predict net impact before production apply.</p>
+        {sandboxError && <p className="error-text">{sandboxError}</p>}
+        {sandboxResult && (
+          <div className="ac-sandbox-results">
+            <div className="ac-sandbox-kpis">
+              <div><span>Before</span><strong>{fmtMoney(sandboxResult.projected_monthly_cost_before_usd)}</strong></div>
+              <div><span>After</span><strong>{fmtMoney(sandboxResult.projected_monthly_cost_after_usd)}</strong></div>
+              <div><span>Projected Savings</span><strong>{fmtMoney(sandboxResult.projected_monthly_savings_usd)}</strong></div>
+              <div><span>Residual Risk</span><StatusBadge level={riskLevelToBadge(sandboxResult.residual_risk_level)} label={toTitleCase(sandboxResult.residual_risk_level)} /></div>
+            </div>
+            <div className="ac-sandbox-steps">
+              {sandboxResult.steps.map((step) => (
+                <div key={`${step.order}-${step.resource_id}-${step.action_type}`} className="ac-sandbox-step">
+                  <span className="ac-sandbox-step-order">#{step.order}</span>
+                  <span className="ac-sandbox-step-action">{toTitleCase(step.action_type)} {step.resource_id}</span>
+                  <span className="ac-sandbox-step-message">{step.message}</span>
+                  <span className="ac-sandbox-step-savings">{fmtMoney(step.predicted_monthly_savings_usd)}/mo</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </SectionCard>
 
       <SectionCard noPadding>
         <button className="ac-history-toggle" onClick={() => setHistoryOpen(!historyOpen)}>
@@ -2010,6 +2246,7 @@ function AppShell() {
           <Route path="/waste" element={<Navigate to="/actions" replace />} />
           <Route path="/actions" element={
             <ActionCenterPage
+              task={task} seed={seed}
               liveDashboard={liveDashboard} liveLoading={liveLoading} liveError={liveError}
               liveMessage={liveMessage} liveBusyKey={liveBusyKey}
               onRefreshLive={refreshLiveDashboard} onRunLiveAction={runLiveAction}

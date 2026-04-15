@@ -1,30 +1,42 @@
 from __future__ import annotations
 
+import copy
 from collections import deque
 from datetime import datetime, timedelta, timezone
 import logging
 import os
 import secrets
 import time
+from typing import Literal
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 import uvicorn
 
 from cloud_cost_env.models import (
+    CloudAccount,
     CloudCostAction,
     CloudCostObservation,
     CloudCostState,
     AzureApprovalChallenge,
     AzureConnectRequest,
     AzureConnectionDashboard,
+    LiveActionSpec,
+    LiveImpactMetrics,
+    LiveImpactPrediction,
     LiveActionRequest,
     LiveActionResult,
     LiveAwsDashboard,
+    LiveOptimizationPlan,
+    LivePlanStep,
     LiveRecommendation,
+    LiveSandboxRequest,
+    LiveSandboxResult,
+    LiveSandboxStep,
     ResourceSummary,
     StepResult,
 )
+from cloud_cost_env.data.generator import TASK_PROFILES, generate_task_account
 from cloud_cost_env.rl.policy import (
     DEFAULT_RL_POLICY_PATH,
     QTablePolicy,
@@ -32,6 +44,8 @@ from cloud_cost_env.rl.policy import (
     candidate_to_cloud_action,
     observation_state_key,
 )
+from cloud_cost_env.server.action_engine import ActionEngine
+from cloud_cost_env.server.dependency_checker import DependencyChecker
 from cloud_cost_env.server.environment import CloudCostEnvironment
 from cloud_cost_env.server.azure_live import AzureLiveConnector
 from cloud_cost_env.server.web_tester import TESTER_HTML
@@ -75,6 +89,8 @@ def create_fastapi_app() -> FastAPI:
     rate_limit_reset_per_window = _parse_int_env("RATE_LIMIT_RESET_PER_WINDOW", 60, minimum=1, maximum=2000)
     rate_limit_step_per_window = _parse_int_env("RATE_LIMIT_STEP_PER_WINDOW", 180, minimum=1, maximum=5000)
     rate_limit_live_action_per_window = _parse_int_env("RATE_LIMIT_LIVE_ACTION_PER_WINDOW", 60, minimum=1, maximum=2000)
+    rate_limit_live_simulate_per_window = _parse_int_env("RATE_LIMIT_LIVE_SIMULATE_PER_WINDOW", 120, minimum=1, maximum=4000)
+    rate_limit_live_plan_per_window = _parse_int_env("RATE_LIMIT_LIVE_PLAN_PER_WINDOW", 60, minimum=1, maximum=2000)
     rate_limit_azure_approval_per_window = _parse_int_env("RATE_LIMIT_AZURE_APPROVAL_PER_WINDOW", 30, minimum=1, maximum=1000)
     rate_limit_azure_connect_per_window = _parse_int_env("RATE_LIMIT_AZURE_CONNECT_PER_WINDOW", 6, minimum=1, maximum=120)
     rate_limit_hits: dict[str, dict[str, deque[float]]] = {}
@@ -205,6 +221,389 @@ def create_fastapi_app() -> FastAPI:
         live_action_history.append(result)
         del live_action_history[:-20]
         return result
+
+    def _to_float(value: object) -> float:
+        try:
+            if isinstance(value, (int, float, str)):
+                return float(value)
+            return 0.0
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _account_monthly_cost(account: CloudAccount) -> float:
+        total = 0.0
+        total += sum(item.hourly_cost * 24 * 30 for item in account.compute_instances)
+        total += sum(item.monthly_cost for item in account.storage_volumes)
+        total += sum(item.monthly_cost for item in account.databases)
+        total += sum(lb.monthly_cost + sum(ip.monthly_cost for ip in lb.elastic_ips) for lb in account.load_balancers)
+        return round(total, 2)
+
+    def _resource_summaries_from_account(account: CloudAccount) -> list[ResourceSummary]:
+        summaries: list[ResourceSummary] = []
+
+        for compute in account.compute_instances:
+            monthly = compute.hourly_cost * 24 * 30
+            signal = 0.0
+            if compute.state == "stopped" and compute.last_connection_days_ago > 30:
+                signal = 1.0
+            elif compute.avg_cpu_utilization < 15 and compute.p99_cpu_utilization < 60:
+                signal = 0.7
+
+            summaries.append(
+                ResourceSummary(
+                    resource_id=compute.instance_id,
+                    resource_type="compute",
+                    monthly_cost=round(monthly, 2),
+                    status=compute.state,
+                    risk="high" if compute.tags.get("env") == "prod" else "medium",
+                    waste_signal=signal,
+                    tags=compute.tags,
+                )
+            )
+
+        for volume in account.storage_volumes:
+            signal = 1.0 if volume.attached_to is None and volume.last_access_days_ago > 30 else 0.3
+            summaries.append(
+                ResourceSummary(
+                    resource_id=volume.volume_id,
+                    resource_type="volume",
+                    monthly_cost=volume.monthly_cost,
+                    status="orphaned" if volume.attached_to is None else "attached",
+                    risk="medium",
+                    waste_signal=signal,
+                    tags={},
+                )
+            )
+
+            for snapshot in volume.snapshots:
+                summaries.append(
+                    ResourceSummary(
+                        resource_id=snapshot.id,
+                        resource_type="snapshot",
+                        monthly_cost=round(snapshot.size_gb * 0.05, 2),
+                        status=f"age:{snapshot.age_days}",
+                        risk="low",
+                        waste_signal=0.8 if snapshot.age_days > 90 else 0.2,
+                        tags={},
+                    )
+                )
+
+        for database in account.databases:
+            summaries.append(
+                ResourceSummary(
+                    resource_id=database.db_id,
+                    resource_type="database",
+                    monthly_cost=database.monthly_cost,
+                    status="running",
+                    risk="high" if database.tags.get("env") == "prod" else "medium",
+                    waste_signal=0.7 if database.avg_cpu < 20 else 0.2,
+                    tags=database.tags,
+                )
+            )
+
+        for lb in account.load_balancers:
+            summaries.append(
+                ResourceSummary(
+                    resource_id=lb.lb_id,
+                    resource_type="load_balancer",
+                    monthly_cost=lb.monthly_cost,
+                    status="idle" if lb.attached_targets == 0 else "active",
+                    risk="high" if lb.attached_targets > 0 else "low",
+                    waste_signal=1.0 if lb.attached_targets == 0 and lb.avg_requests_per_sec == 0 else 0.1,
+                    tags={},
+                )
+            )
+
+            for ip in lb.elastic_ips:
+                summaries.append(
+                    ResourceSummary(
+                        resource_id=ip.ip_id,
+                        resource_type="elastic_ip",
+                        monthly_cost=ip.monthly_cost,
+                        status="attached" if ip.attached else "unattached",
+                        risk="low",
+                        waste_signal=1.0 if not ip.attached else 0.0,
+                        tags={},
+                    )
+                )
+
+        return summaries
+
+    def _resolve_snapshot_account(task_name: str, seed: int | None) -> tuple[CloudAccount, int | None]:
+        if (
+            env.state is not None
+            and env.account is not None
+            and env.state.task_name == task_name
+            and (seed is None or env.seed == seed)
+        ):
+            return copy.deepcopy(env.account), env.seed
+
+        if task_name not in TASK_PROFILES:
+            raise ValueError(f"Unknown task: {task_name}")
+
+        default_seed = int(TASK_PROFILES[task_name]["seed"])
+        resolved_seed = default_seed if seed is None else seed
+        return generate_task_account(task_name=task_name, seed=resolved_seed), resolved_seed
+
+    def _resource_risk_for_account(account: CloudAccount, resource_id: str) -> str:
+        for item in account.compute_instances:
+            if item.instance_id == resource_id:
+                return "high" if item.tags.get("env") == "prod" else "medium"
+
+        for item in account.databases:
+            if item.db_id == resource_id:
+                return "high" if item.tags.get("env") == "prod" else "medium"
+
+        for item in account.storage_volumes:
+            if item.volume_id == resource_id:
+                return "medium"
+            for snapshot in item.snapshots:
+                if snapshot.id == resource_id:
+                    return "low"
+
+        for lb in account.load_balancers:
+            if lb.lb_id == resource_id:
+                return "high" if lb.attached_targets > 0 else "low"
+            for ip in lb.elastic_ips:
+                if ip.ip_id == resource_id:
+                    return "low"
+
+        return "medium"
+
+    def _risk_score_to_level(risk_score: float) -> Literal["low", "medium", "high", "critical"]:
+        if risk_score >= 80:
+            return "critical"
+        if risk_score >= 55:
+            return "high"
+        if risk_score >= 30:
+            return "medium"
+        return "low"
+
+    def _risk_level_to_score(risk_level: str) -> float:
+        if risk_level == "critical":
+            return 90.0
+        if risk_level == "high":
+            return 65.0
+        if risk_level == "medium":
+            return 35.0
+        return 15.0
+
+    def _rank_candidates_for_account(account: CloudAccount, steps_remaining: int) -> list:
+        summaries = _resource_summaries_from_account(account)
+        candidates = build_action_candidates(summaries)
+        if not candidates:
+            return []
+
+        observation = CloudCostObservation(
+            resources_summary=summaries,
+            total_monthly_cost=_account_monthly_cost(account),
+            savings_achieved=0.0,
+            waste_remaining=round(sum(item.monthly_cost * item.waste_signal for item in summaries), 2),
+            last_action_result="planning",
+            sla_violations=[],
+            recommendations=[],
+            steps_remaining=max(0, steps_remaining),
+            current_score=0.0,
+        )
+
+        if _effective_control_mode() == "rl" and _validate_rl_runtime(force=False):
+            return rl_policy.rank_candidates(observation, candidates)
+        return _heuristic_rank(candidates)
+
+    def _simulate_action_impact(
+        account: CloudAccount,
+        action_spec: LiveActionSpec,
+    ) -> tuple[LiveImpactPrediction, dict[str, object]]:
+        checker = DependencyChecker(account)
+        engine = ActionEngine(account)
+        pre_cost = _account_monthly_cost(account)
+        base_risk = _resource_risk_for_account(account, action_spec.resource_id)
+        dependency_impacts = checker.broken_dependencies_if_removed(action_spec.resource_id)
+
+        outcome = engine.execute(candidate_to_cloud_action(action_spec.action_type, action_spec.resource_id))
+        post_cost = _account_monthly_cost(account)
+
+        executable = bool(outcome.get("ok", False))
+        raw_savings = _to_float(outcome.get("savings", 0.0))
+        cost_delta = max(0.0, pre_cost - post_cost)
+        predicted_savings = round(max(raw_savings, cost_delta), 2)
+
+        raw_sla = outcome.get("sla_violations", [])
+        sla_risks = [str(item) for item in raw_sla] if isinstance(raw_sla, list) else []
+
+        dependency_count = len(dependency_impacts)
+        base_risk_score = 8.0 if base_risk == "low" else 20.0 if base_risk == "medium" else 36.0
+        risk_score = base_risk_score
+        risk_score += dependency_count * 12.0
+        risk_score += len(sla_risks) * 14.0
+        risk_score += 10.0 if action_spec.action_type in {"terminate_instance", "delete_load_balancer"} else 0.0
+        risk_score += 8.0 if not executable else 0.0
+        risk_score = max(0.0, min(100.0, risk_score))
+        risk_level = _risk_score_to_level(risk_score)
+
+        if action_spec.action_type == "rightsize_instance":
+            latency_delta = dependency_count * 3.5 + (10.0 if base_risk == "high" else 5.0)
+            throughput_delta = -(dependency_count * 2.8 + (8.0 if base_risk == "high" else 3.0))
+        elif action_spec.action_type in {"terminate_instance", "stop_instance", "delete_load_balancer"}:
+            latency_delta = dependency_count * 9.0 + (12.0 if base_risk == "high" else 4.0)
+            throughput_delta = -(dependency_count * 7.0 + (10.0 if base_risk == "high" else 3.0))
+        else:
+            latency_delta = dependency_count * 2.0 + (4.0 if base_risk == "high" else 1.5)
+            throughput_delta = -(dependency_count * 1.8 + (3.0 if base_risk == "high" else 1.0))
+
+        error_delta = min(25.0, dependency_count * 1.2 + len(sla_risks) * 2.5 + (4.0 if base_risk == "high" else 1.0))
+        alert_probability = min(99.0, risk_score)
+
+        confidence = 0.58 + (0.10 if executable else -0.12)
+        confidence += min(0.2, dependency_count * 0.03)
+        confidence += 0.05 if sla_risks else 0.0
+        confidence = max(0.25, min(0.95, confidence))
+
+        reward_estimate = min(1.2, predicted_savings / 500.0) - (risk_score / 120.0) - (0.2 if not executable else 0.0)
+
+        followups: list[str] = []
+        if dependency_impacts:
+            followups.append("Validate dependency owners and rollout order before apply.")
+        if sla_risks:
+            followups.append("Run synthetic checks for API latency and error budgets.")
+        if action_spec.action_type == "rightsize_instance":
+            followups.append("Monitor p95/p99 latency and connection saturation for 30 minutes.")
+
+        rationale_parts = [
+            f"Predicted savings ${predicted_savings:.2f}/mo",
+            f"dependency impacts {dependency_count}",
+            f"SLA signals {len(sla_risks)}",
+        ]
+        if not executable:
+            rationale_parts.append("execution likely blocked by current safety checks")
+
+        prediction = LiveImpactPrediction(
+            action=action_spec,
+            executable=executable,
+            predicted_monthly_savings_usd=predicted_savings,
+            predicted_step_reward=round(reward_estimate, 4),
+            risk_level=risk_level,
+            confidence=round(confidence, 2),
+            impacted_dependencies=dependency_impacts,
+            sla_risks=sla_risks,
+            required_followups=followups,
+            metrics=LiveImpactMetrics(
+                latency_delta_ms=round(latency_delta, 1),
+                throughput_delta_pct=round(throughput_delta, 1),
+                error_rate_delta_pct=round(error_delta, 1),
+                alert_probability_pct=round(alert_probability, 1),
+            ),
+            rationale="; ".join(rationale_parts),
+        )
+        return prediction, outcome
+
+    def _build_optimization_plan(task_name: str, seed: int | None, max_steps: int) -> LiveOptimizationPlan:
+        account, resolved_seed = _resolve_snapshot_account(task_name=task_name, seed=seed)
+        step_limit = max(1, min(8, max_steps))
+        seen: set[tuple[str, str]] = set()
+        steps: list[LivePlanStep] = []
+        total_savings = 0.0
+        total_risk = 0.0
+
+        for order in range(1, step_limit + 1):
+            ranked = _rank_candidates_for_account(account, steps_remaining=step_limit - order + 1)
+            selected = None
+            for candidate in ranked:
+                key = (candidate.action_type, candidate.resource_id)
+                if key not in seen:
+                    selected = candidate
+                    seen.add(key)
+                    break
+
+            if selected is None:
+                break
+
+            action_spec = LiveActionSpec(action_type=selected.action_type, resource_id=selected.resource_id)
+            prediction, _ = _simulate_action_impact(account, action_spec)
+            total_savings += prediction.predicted_monthly_savings_usd
+            total_risk += _risk_level_to_score(prediction.risk_level)
+
+            steps.append(
+                LivePlanStep(
+                    order=order,
+                    action_type=selected.action_type,
+                    resource_id=selected.resource_id,
+                    resource_name=selected.resource_name,
+                    predicted_monthly_savings_usd=prediction.predicted_monthly_savings_usd,
+                    risk_level=prediction.risk_level,
+                    dependency_impact_count=len(prediction.impacted_dependencies),
+                    rationale=prediction.rationale,
+                )
+            )
+
+        average_risk = (total_risk / len(steps)) if steps else 0.0
+        mode = _effective_control_mode()
+        notes = [
+            "Plan order is generated from current control policy and re-simulated after each step.",
+            "Each step includes dependency and SLA impact scoring before execution.",
+        ]
+        if mode == "rl":
+            notes.append("Control mode is RL; ranking is policy-driven and adjusted with live risk signals.")
+        else:
+            notes.append("Control mode is heuristic; ranking is savings-weighted with safety penalties.")
+
+        return LiveOptimizationPlan(
+            generated_at=_now_iso(),
+            control_mode=mode,
+            task_name=task_name,
+            seed=resolved_seed,
+            projected_total_savings_usd=round(total_savings, 2),
+            projected_total_risk_score=round(average_risk, 2),
+            steps=steps,
+            notes=notes,
+        )
+
+    def _run_sandbox_simulation(payload: LiveSandboxRequest) -> LiveSandboxResult:
+        account, resolved_seed = _resolve_snapshot_account(task_name=payload.task_name, seed=payload.seed)
+        pre_cost = _account_monthly_cost(account)
+        steps: list[LiveSandboxStep] = []
+        risk_scores: list[float] = []
+
+        for idx, action in enumerate(payload.actions[:12], start=1):
+            prediction, outcome = _simulate_action_impact(account, action)
+            risk_scores.append(_risk_level_to_score(prediction.risk_level))
+            steps.append(
+                LiveSandboxStep(
+                    order=idx,
+                    action_type=action.action_type,
+                    resource_id=action.resource_id,
+                    ok=prediction.executable,
+                    message=str(outcome.get("message", "Simulation completed")),
+                    predicted_monthly_savings_usd=prediction.predicted_monthly_savings_usd,
+                    risk_level=prediction.risk_level,
+                    impacted_dependencies=prediction.impacted_dependencies,
+                    sla_risks=prediction.sla_risks,
+                )
+            )
+
+        post_cost = _account_monthly_cost(account)
+        projected_savings = round(max(0.0, pre_cost - post_cost), 2)
+        highest_risk = _risk_score_to_level(max(risk_scores) if risk_scores else 0.0)
+
+        notes = [
+            "Sandbox simulation is non-destructive and runs against an isolated account snapshot.",
+            "Dependency and SLA predictions should be validated with production telemetry before apply.",
+        ]
+
+        if not payload.actions:
+            notes.append("No actions were provided. Add recommendations to the sandbox to run a scenario.")
+
+        return LiveSandboxResult(
+            task_name=payload.task_name,
+            seed=resolved_seed,
+            generated_at=_now_iso(),
+            projected_monthly_cost_before_usd=pre_cost,
+            projected_monthly_cost_after_usd=post_cost,
+            projected_monthly_savings_usd=projected_savings,
+            residual_risk_level=highest_risk,
+            steps=steps,
+            notes=notes,
+        )
 
     def _empty_azure_dashboard(note: str) -> AzureConnectionDashboard:
         return AzureConnectionDashboard(
@@ -506,6 +905,42 @@ def create_fastapi_app() -> FastAPI:
                 errors=[],
                 updated_at=_now_iso(),
             )
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/live/simulate-action", response_model=LiveImpactPrediction)
+    def live_simulate_action(
+        action_request: LiveActionSpec,
+        request: Request,
+        task_name: str = "full_optimization",
+        seed: int | None = None,
+    ):
+        _enforce_rate_limit(request, "live_simulate", rate_limit_live_simulate_per_window)
+        try:
+            account, _ = _resolve_snapshot_account(task_name=task_name, seed=seed)
+            prediction, _ = _simulate_action_impact(account, action_request)
+            return prediction
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/live/plan", response_model=LiveOptimizationPlan)
+    def live_plan(
+        request: Request,
+        task_name: str = "full_optimization",
+        seed: int | None = None,
+        max_steps: int = 5,
+    ):
+        _enforce_rate_limit(request, "live_plan", rate_limit_live_plan_per_window)
+        try:
+            return _build_optimization_plan(task_name=task_name, seed=seed, max_steps=max_steps)
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/live/sandbox", response_model=LiveSandboxResult)
+    def live_sandbox(payload: LiveSandboxRequest, request: Request):
+        _enforce_rate_limit(request, "live_simulate", rate_limit_live_simulate_per_window)
+        try:
+            return _run_sandbox_simulation(payload)
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
